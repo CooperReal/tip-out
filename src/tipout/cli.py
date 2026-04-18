@@ -60,7 +60,7 @@ def run(period_str, config_path, pos_path, hours_path, json_output):
 
     cfg = Config.load(config_path)
     try:
-        _run(cfg, pos_path, hours_path, period)
+        run_id = _run(cfg, pos_path, hours_path, period)
     except UnresolvedNames as e:
         pending_path = _write_pending_names(config_path, e.names)
         if json_output:
@@ -91,9 +91,10 @@ def run(period_str, config_path, pos_path, hours_path, json_output):
         click.echo(json.dumps({
             "status": "success",
             "period": f"{period.start.isoformat()}:{period.end.isoformat()}",
+            "run_id": run_id,
         }))
     else:
-        click.echo(f"Done. Pay period {period.start} to {period.end}.")
+        click.echo(f"Done. Pay period {period.start} to {period.end}. run_id={run_id}")
 
 
 @main.command("resolve-pending")

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from pathlib import Path
 
 from tipout.pos_parser import parse_workbook
@@ -8,6 +9,7 @@ from tipout.summary import append_period_tab
 from tipout.per_employee import append_period_tab_for_employee
 from tipout.period import PayPeriod
 from tipout.anomalies import check_all, write_report
+from tipout.archive import archive_run, make_run_id
 
 
 IGNORE_SENTINEL = "__IGNORE__"
@@ -20,6 +22,8 @@ class UnresolvedNames(RuntimeError):
 
 
 def run(config, pos_path: Path, hours_path: Path, period: PayPeriod):
+    started_at = datetime.now(timezone.utc)
+    run_id = make_run_id()
     roster = load_roster(config.roster_path)
     shift_rows = parse_workbook(pos_path)
     raw_names = {r.raw_name for r in shift_rows}
@@ -51,3 +55,5 @@ def run(config, pos_path: Path, hours_path: Path, period: PayPeriod):
         period_rows, hours_entries, roster, config.summary_path, period
     )
     write_report(anomaly_path, anomalies, period)
+    archive_run(run_id, config, pos_path, hours_path, period, started_at)
+    return run_id
