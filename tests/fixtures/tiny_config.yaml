@@ -1,0 +1,5 @@
+anchor_date: 2025-12-29
+roster_path: roster.xlsx
+summary_path: summary.xlsx
+per_employee_dir: per-employee
+archive_dir: archive
