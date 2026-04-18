@@ -9,6 +9,10 @@ EXPECTED_HEADERS = [
     "TotalTip Out", "Barback", "Bartender", "Net tip",
 ]
 
+
+class SchemaError(RuntimeError):
+    pass
+
 @dataclass
 class ShiftRow:
     date: date
@@ -77,6 +81,13 @@ def _find_day_blocks(ws) -> list[dict]:
             c = max(headers.values()) + 2  # advance past this block
         else:
             c += 1
+    if not blocks:
+        has_date_in_row_3 = any(
+            hasattr(ws.cell(row=3, column=col).value, "date")
+            for col in range(1, max_c + 1)
+        )
+        if has_date_in_row_3:
+            raise SchemaError(f"No valid day-blocks in {ws.title!r}")
     return blocks
 
 def _parse_block(ws, block) -> list[ShiftRow]:
