@@ -26,6 +26,7 @@ class ShiftRow:
     bartender: float
     net_tip: float
     is_party: bool  # True if Party column had value (vs Cash RCP)
+    canonical_name: str | None = None
 
 def parse_workbook(path: Path) -> list[ShiftRow]:
     wb = load_workbook(path, data_only=True)
