@@ -181,5 +181,38 @@ def test_cmd(fixture_filter):
         raise SystemExit(1)
 
 
+@main.command("doctor")
+@click.option("--config", "config_path",
+              default="config.yaml",
+              type=click.Path(path_type=Path),  # allow missing for a graceful 'fail' check
+              help="Path to config.yaml (default: ./config.yaml).")
+@click.option("--json", "json_output", is_flag=True, default=False,
+              help="Emit structured JSON status.")
+def doctor_cmd(config_path, json_output):
+    """Run preflight checks on the tipout installation and configuration."""
+    from tipout.doctor import run_checks
+
+    checks = run_checks(config_path)
+
+    if json_output:
+        click.echo(json.dumps({
+            "status": "pass" if all(c.status == "pass" for c in checks) else (
+                "warn" if all(c.status != "fail" for c in checks) else "fail"
+            ),
+            "checks": [
+                {"name": c.name, "status": c.status, "detail": c.detail}
+                for c in checks
+            ],
+        }, indent=2))
+    else:
+        for c in checks:
+            badge = {"pass": "[OK]  ", "warn": "[WARN]", "fail": "[FAIL]"}[c.status]
+            click.echo(f"{badge} {c.name}: {c.detail}")
+
+    overall_fail = any(c.status == "fail" for c in checks)
+    if overall_fail:
+        raise SystemExit(1)
+
+
 if __name__ == "__main__":
     main()
