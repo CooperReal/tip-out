@@ -1,0 +1,31 @@
+# Real payroll data — never commit
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+
+# Runtime folders
+inputs/
+outputs/
+archive/
+logs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Claude Code local state
+.claude/
