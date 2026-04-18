@@ -19,11 +19,12 @@ def load_hours(path: Path, roster: Roster) -> tuple[list[HoursEntry], list[str]]
     ws = wb.active
     entries = []
     unknown = []
-    headers = [c.value for c in ws[1]]
     for row in ws.iter_rows(min_row=2, values_only=True):
         name, d, h = row[0], row[1], row[2]
         if not name:
             continue
+        if h is None:
+            continue   # skip rows without hours (day off, etc.)
         canon = roster.resolve(name)
         if not canon:
             unknown.append(name)

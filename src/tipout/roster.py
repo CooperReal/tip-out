@@ -17,7 +17,10 @@ class Roster:
     aliases: dict[str, str]  # raw -> canonical
 
     def resolve(self, raw: str) -> str | None:
-        return self.aliases.get(raw) or self.aliases.get(raw.strip())
+        key = raw.strip() if isinstance(raw, str) else raw
+        if key in self.employees:
+            return key
+        return self.aliases.get(raw) or self.aliases.get(key)
 
     def fuzzy_candidates(self, raw: str) -> list[str]:
         """Return canonicals whose first name matches raw (case-insensitive, ignoring role tags like '(Xen)')."""

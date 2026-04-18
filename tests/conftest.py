@@ -17,12 +17,9 @@ def tiny_roster(tmp_path):
     aliases.append(["Raw Name", "Canonical Name"])
     aliases.append(["Anthony", "Anthony Garcia"])
     aliases.append(["anthony", "Anthony Garcia"])
-    aliases.append(["Anthony Garcia", "Anthony Garcia"])
     aliases.append(["Jake", "Jake Purvis"])
-    aliases.append(["Jake Purvis", "Jake Purvis"])
     aliases.append(["Kristin", "Kristin Bartosic"])
     aliases.append(["kristin", "Kristin Bartosic"])
-    aliases.append(["Kristin Bartosic", "Kristin Bartosic"])
     path = tmp_path / "roster.xlsx"
     wb.save(path)
     return path
