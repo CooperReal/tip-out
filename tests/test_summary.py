@@ -130,7 +130,7 @@ def test_append_period_tab_creates_new_file(tmp_path, tiny_roster):
     summary_path = tmp_path / "summary.xlsx"
     assert not summary_path.exists()
 
-    append_period_tab(summary_path, period, rows, roster, hours_entries=None)
+    append_period_tab(summary_path, period, rows, roster)
 
     assert summary_path.exists()
     wb = load_workbook(summary_path)
@@ -158,7 +158,7 @@ def test_append_period_tab_preserves_prior(tmp_path, tiny_roster):
 
     period = PayPeriod.from_dates(date(2025, 12, 29), date(2026, 1, 11))
     rows = [_shift(date(2025, 12, 29), "Anthony", "Anthony Garcia", 100.00)]
-    append_period_tab(summary_path, period, rows, roster, hours_entries=None)
+    append_period_tab(summary_path, period, rows, roster)
 
     wb2 = load_workbook(summary_path)
     assert "09.29 to 10.12.2025" in wb2.sheetnames
@@ -172,9 +172,9 @@ def test_append_period_tab_rejects_duplicate(tmp_path, tiny_roster):
     period = PayPeriod.from_dates(date(2025, 12, 29), date(2026, 1, 11))
     rows = [_shift(date(2025, 12, 29), "Anthony", "Anthony Garcia", 100.00)]
 
-    append_period_tab(summary_path, period, rows, roster, hours_entries=None)
+    append_period_tab(summary_path, period, rows, roster)
     with pytest.raises(ValueError):
-        append_period_tab(summary_path, period, rows, roster, hours_entries=None)
+        append_period_tab(summary_path, period, rows, roster)
 
 
 def test_tab_name_formatting():

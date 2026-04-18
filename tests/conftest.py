@@ -86,8 +86,6 @@ def tiny_runner_env(tmp_path):
                 "anchor_date": _date(2025, 12, 29),
                 "roster_path": str(roster_path),
                 "summary_path": str(summary_path),
-                "per_employee_dir": str(tmp_path / "per-employee"),
-                "archive_dir": str(tmp_path / "archive"),
             }
         ),
         encoding="utf-8",

@@ -90,14 +90,11 @@ def append_period_tab(
     period: PayPeriod,
     shift_rows: list[ShiftRow],
     roster: Roster,
-    hours_entries=None,  # retained for backwards-compat call sites; ignored
 ) -> None:
     """Append a new period tab to the 2-week summary workbook, creating it if absent.
 
     Raises ValueError if the tab for this period already exists.
     """
-    del hours_entries
-
     if summary_path.exists():
         wb = load_workbook(summary_path)
     else:

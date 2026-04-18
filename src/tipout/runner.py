@@ -31,4 +31,4 @@ def run(config: Config, pos_path: Path, period: PayPeriod) -> None:
     if unknown:
         raise UnresolvedNames(unknown)
 
-    append_period_tab(config.summary_path, period, shift_rows, roster, hours_entries=None)
+    append_period_tab(config.summary_path, period, shift_rows, roster)

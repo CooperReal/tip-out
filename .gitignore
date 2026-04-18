@@ -4,13 +4,10 @@
 *.xlsm
 *.csv
 !tests/fixtures/tiny_pos.xlsx
-!tests/fixtures/periods/_synthetic/**
 
 # Runtime folders
-inputs/
-outputs/
-archive/
-logs/
+output/
+unknown_names.txt
 
 # Python
 __pycache__/
