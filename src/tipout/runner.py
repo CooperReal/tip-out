@@ -21,7 +21,7 @@ class UnresolvedNames(RuntimeError):
         super().__init__(f"Unresolved: {names}")
 
 
-def run(config, pos_path: Path, hours_path: Path, period: PayPeriod):
+def run(config, pos_path: Path, hours_path: Path | None, period: PayPeriod):
     started_at = datetime.now(timezone.utc)
     run_id = make_run_id()
     roster = load_roster(config.roster_path)
@@ -34,22 +34,30 @@ def run(config, pos_path: Path, hours_path: Path, period: PayPeriod):
         r.canonical_name = resolved[r.raw_name]
     # Drop ignored shift rows after resolution so they don't reach validation/emission.
     shift_rows = [r for r in shift_rows if r.canonical_name != IGNORE_SENTINEL]
-    hours_entries, hours_unknown = load_hours(hours_path, roster)
-    if hours_unknown:
-        raise UnresolvedNames(hours_unknown)
-    hours_entries = [h for h in hours_entries if h.canonical != IGNORE_SENTINEL]
-    validate_join(shift_rows, hours_entries, period.start, period.end)
+
+    if hours_path is not None:
+        hours_entries, hours_unknown = load_hours(hours_path, roster)
+        if hours_unknown:
+            raise UnresolvedNames(hours_unknown)
+        hours_entries = [h for h in hours_entries if h.canonical != IGNORE_SENTINEL]
+        validate_join(shift_rows, hours_entries, period.start, period.end)
+    else:
+        hours_entries = []
+
     period_rows = [r for r in shift_rows if period.start <= r.date <= period.end]
     append_period_tab(config.summary_path, period, period_rows, roster, hours_entries)
-    for canonical in sorted({r.canonical_name for r in period_rows}):
-        per_emp_path = config.per_employee_dir / f"{canonical}.xlsx"
-        append_period_tab_for_employee(
-            per_emp_path,
-            period,
-            canonical,
-            [r for r in period_rows if r.canonical_name == canonical],
-            [h for h in hours_entries if h.canonical == canonical],
-        )
+
+    if hours_path is not None:
+        for canonical in sorted({r.canonical_name for r in period_rows}):
+            per_emp_path = config.per_employee_dir / f"{canonical}.xlsx"
+            append_period_tab_for_employee(
+                per_emp_path,
+                period,
+                canonical,
+                [r for r in period_rows if r.canonical_name == canonical],
+                [h for h in hours_entries if h.canonical == canonical],
+            )
+
     anomaly_path = config.summary_path.parent / "anomaly_report.xlsx"
     anomalies = check_all(
         period_rows, hours_entries, roster, config.summary_path, period

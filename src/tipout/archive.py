@@ -44,12 +44,15 @@ def archive_run(
     run_id: str,
     config: Config,
     pos_path: Path,
-    hours_path: Path,
+    hours_path: Path | None,
     period: PayPeriod,
     started_at: datetime,
     operator_answers: dict | None = None,
 ) -> Path:
     """Copy inputs + outputs + roster into archive/<run-id>/ and freeze it read-only.
+
+    ``hours_path`` may be ``None`` for summary-only runs; in that case no hours
+    file is copied and ``run.json`` records ``hours_provided: False``.
 
     Returns the archive directory path.
     """
@@ -58,7 +61,8 @@ def archive_run(
 
     # 1. Copy inputs
     shutil.copy2(pos_path, archive_root / "input_pos.xlsx")
-    shutil.copy2(hours_path, archive_root / "input_hours.xlsx")
+    if hours_path is not None:
+        shutil.copy2(hours_path, archive_root / "input_hours.xlsx")
     shutil.copy2(config.roster_path, archive_root / "input_roster.xlsx")
 
     # 2. Copy outputs (summary + per-employee + anomaly report)
@@ -99,6 +103,7 @@ def archive_run(
         "started_at_utc": started_at.isoformat(),
         "ended_at_utc": ended_at.isoformat(),
         "operator_answers": operator_answers or {},
+        "hours_provided": hours_path is not None,
     }
     (archive_root / "run.json").write_text(
         json.dumps(run_meta, indent=2, sort_keys=True)

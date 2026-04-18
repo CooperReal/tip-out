@@ -42,9 +42,9 @@ def _write_pending_names(config_path: Path, names: list[str]) -> Path:
 @click.option("--pos", "pos_path", required=True,
               type=click.Path(exists=True, dir_okay=False, path_type=Path),
               help="Path to POS daily workbook.")
-@click.option("--hours", "hours_path", required=True,
+@click.option("--hours", "hours_path", required=False, default=None,
               type=click.Path(exists=True, dir_okay=False, path_type=Path),
-              help="Path to hours workbook.")
+              help="Path to hours workbook. Optional; omit for summary-only runs.")
 @click.option("--json", "json_output", is_flag=True, default=False,
               help="Emit structured JSON status (for automation like Cowork).")
 def run(period_str, config_path, pos_path, hours_path, json_output):
@@ -59,6 +59,8 @@ def run(period_str, config_path, pos_path, hours_path, json_output):
     period = PayPeriod.from_dates(start, end)
 
     cfg = Config.load(config_path)
+    if hours_path is None and not json_output:
+        click.echo("Running summary-only (no hours provided).")
     try:
         run_id = _run(cfg, pos_path, hours_path, period)
     except UnresolvedNames as e:
@@ -212,6 +214,27 @@ def doctor_cmd(config_path, json_output):
     overall_fail = any(c.status == "fail" for c in checks)
     if overall_fail:
         raise SystemExit(1)
+
+
+@main.command("bootstrap-roster")
+@click.option("--from-summary", "summary_path", required=True,
+              type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("--out", "out_path", required=True, type=click.Path(path_type=Path))
+@click.option("--force", is_flag=True, default=False,
+              help="Overwrite --out if it already exists.")
+def bootstrap_roster_cmd(summary_path, out_path, force):
+    """Seed a roster.xlsx from an existing 2-week summary workbook."""
+    from tipout.bootstrap import extract_roster_from_summary, write_roster
+    if out_path.exists() and not force:
+        raise click.ClickException(
+            f"{out_path} already exists. Pass --force to overwrite."
+        )
+    snapshot = extract_roster_from_summary(summary_path)
+    write_roster(snapshot, out_path)
+    click.echo(
+        f"Extracted {len(snapshot.employees)} employees, "
+        f"{len(snapshot.aliases)} aliases. Wrote {out_path}."
+    )
 
 
 if __name__ == "__main__":
