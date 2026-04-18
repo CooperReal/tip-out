@@ -90,17 +90,18 @@ def append_period_tab(
     period: PayPeriod,
     shift_rows: list[ShiftRow],
     roster: Roster,
-    hours_entries: Any,  # unused in v1; kept for API symmetry with per-employee writer
+    hours_entries=None,  # retained for backwards-compat call sites; ignored
 ) -> None:
     """Append a new period tab to the 2-week summary workbook, creating it if absent.
 
     Raises ValueError if the tab for this period already exists.
     """
-    _ = hours_entries  # reserved for future checks
+    del hours_entries
 
     if summary_path.exists():
         wb = load_workbook(summary_path)
     else:
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
         wb = Workbook()
         # remove openpyxl's default empty sheet
         if "Sheet" in wb.sheetnames:

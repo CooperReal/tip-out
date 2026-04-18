@@ -15,8 +15,6 @@ def test_load_tiny_config():
     assert cfg.anchor_date == date(2025, 12, 29)
     assert cfg.roster_path == (base / "roster.xlsx").resolve()
     assert cfg.summary_path == (base / "summary.xlsx").resolve()
-    assert cfg.per_employee_dir == (base / "per-employee").resolve()
-    assert cfg.archive_dir == (base / "archive").resolve()
 
 
 def test_load_rejects_string_anchor_date(tmp_path):
@@ -24,9 +22,7 @@ def test_load_rejects_string_anchor_date(tmp_path):
     bad.write_text(
         'anchor_date: "2025-12-29"\n'
         "roster_path: roster.xlsx\n"
-        "summary_path: summary.xlsx\n"
-        "per_employee_dir: per-employee\n"
-        "archive_dir: archive\n",
+        "summary_path: summary.xlsx\n",
         encoding="utf-8",
     )
     with pytest.raises(TypeError):
