@@ -3,6 +3,7 @@
 *.xls
 *.xlsm
 *.csv
+!tests/fixtures/tiny_pos.xlsx
 
 # Runtime folders
 inputs/
