@@ -1,6 +1,9 @@
 from collections import defaultdict
 from datetime import date, timedelta
+from pathlib import Path
 from typing import Any
+
+from openpyxl import Workbook, load_workbook
 
 from tipout.period import PayPeriod
 from tipout.pos_parser import ShiftRow
@@ -73,3 +76,45 @@ def build_grid(
         grid.append(row)
 
     return grid
+
+
+def _tab_name(period: PayPeriod) -> str:
+    return (
+        f"{period.start.month:02d}.{period.start.day:02d} to "
+        f"{period.end.month:02d}.{period.end.day:02d}.{period.end.year}"
+    )
+
+
+def append_period_tab(
+    summary_path: Path,
+    period: PayPeriod,
+    shift_rows: list[ShiftRow],
+    roster: Roster,
+    hours_entries: Any,  # unused in v1; kept for API symmetry with per-employee writer
+) -> None:
+    """Append a new period tab to the 2-week summary workbook, creating it if absent.
+
+    Raises ValueError if the tab for this period already exists.
+    """
+    _ = hours_entries  # reserved for future checks
+
+    if summary_path.exists():
+        wb = load_workbook(summary_path)
+    else:
+        wb = Workbook()
+        # remove openpyxl's default empty sheet
+        if "Sheet" in wb.sheetnames:
+            del wb["Sheet"]
+
+    tab_name = _tab_name(period)
+    if tab_name in wb.sheetnames:
+        raise ValueError(f"Tab {tab_name!r} already exists — delete to re-run")
+
+    ws = wb.create_sheet(tab_name)
+    grid = build_grid(period, shift_rows, roster)
+    for r, row_values in enumerate(grid, start=1):
+        for c, val in enumerate(row_values, start=1):
+            if val is not None:
+                ws.cell(row=r, column=c, value=val)
+
+    wb.save(summary_path)

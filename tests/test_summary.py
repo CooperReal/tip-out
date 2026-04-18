@@ -1,9 +1,12 @@
 from datetime import date
 
+import pytest
+from openpyxl import Workbook, load_workbook
+
 from tipout.period import PayPeriod
 from tipout.pos_parser import ShiftRow
 from tipout.roster import load_roster
-from tipout.summary import build_grid
+from tipout.summary import _tab_name, append_period_tab, build_grid
 
 
 def _shift(d: date, raw: str, canon: str | None, net: float) -> ShiftRow:
@@ -115,3 +118,69 @@ def test_build_grid_skips_rows_without_canonical(tiny_roster):
     assert len(grid) == 5
     assert grid[4][0] == "Anthony Garcia"
     assert grid[4][30] == 100.00
+
+
+def test_append_period_tab_creates_new_file(tmp_path, tiny_roster):
+    roster = load_roster(tiny_roster)
+    period = PayPeriod.from_dates(date(2025, 12, 29), date(2026, 1, 11))
+    rows = [
+        _shift(date(2025, 12, 29), "Anthony", "Anthony Garcia", 100.00),
+        _shift(date(2025, 12, 30), "Jake", "Jake Purvis", 50.00),
+    ]
+    summary_path = tmp_path / "summary.xlsx"
+    assert not summary_path.exists()
+
+    append_period_tab(summary_path, period, rows, roster, hours_entries=None)
+
+    assert summary_path.exists()
+    wb = load_workbook(summary_path)
+    assert wb.sheetnames == ["12.29 to 01.11.2026"]
+    ws = wb["12.29 to 01.11.2026"]
+    assert ws.cell(row=1, column=2).value == "Surfing Deer Tip outs"
+    # First employee row (Excel row 5) should start with Anthony Garcia.
+    assert ws.cell(row=5, column=1).value == "Anthony Garcia"
+    assert ws.cell(row=5, column=2).value == "Anthony"
+    # Total Tips total for Anthony should be 100.00 in column 31.
+    assert ws.cell(row=5, column=31).value == 100.00
+
+
+def test_append_period_tab_preserves_prior(tmp_path, tiny_roster):
+    roster = load_roster(tiny_roster)
+    summary_path = tmp_path / "summary.xlsx"
+
+    # Pre-create a workbook with a prior sheet + sentinel value in A1.
+    wb = Workbook()
+    if "Sheet" in wb.sheetnames:
+        del wb["Sheet"]
+    prior = wb.create_sheet("09.29 to 10.12.2025")
+    prior.cell(row=1, column=1, value="PRIOR_SENTINEL")
+    wb.save(summary_path)
+
+    period = PayPeriod.from_dates(date(2025, 12, 29), date(2026, 1, 11))
+    rows = [_shift(date(2025, 12, 29), "Anthony", "Anthony Garcia", 100.00)]
+    append_period_tab(summary_path, period, rows, roster, hours_entries=None)
+
+    wb2 = load_workbook(summary_path)
+    assert "09.29 to 10.12.2025" in wb2.sheetnames
+    assert "12.29 to 01.11.2026" in wb2.sheetnames
+    assert wb2["09.29 to 10.12.2025"].cell(row=1, column=1).value == "PRIOR_SENTINEL"
+
+
+def test_append_period_tab_rejects_duplicate(tmp_path, tiny_roster):
+    roster = load_roster(tiny_roster)
+    summary_path = tmp_path / "summary.xlsx"
+    period = PayPeriod.from_dates(date(2025, 12, 29), date(2026, 1, 11))
+    rows = [_shift(date(2025, 12, 29), "Anthony", "Anthony Garcia", 100.00)]
+
+    append_period_tab(summary_path, period, rows, roster, hours_entries=None)
+    with pytest.raises(ValueError):
+        append_period_tab(summary_path, period, rows, roster, hours_entries=None)
+
+
+def test_tab_name_formatting():
+    p1 = PayPeriod.from_dates(date(2025, 12, 29), date(2026, 1, 11))
+    assert _tab_name(p1) == "12.29 to 01.11.2026"
+
+    # Same-year period.
+    p2 = PayPeriod.from_dates(date(2025, 9, 29), date(2025, 10, 12))
+    assert _tab_name(p2) == "09.29 to 10.12.2025"
