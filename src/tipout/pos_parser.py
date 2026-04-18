@@ -106,12 +106,15 @@ def _parse_block(ws, block) -> list[ShiftRow]:
         net = g("Net tip")
         if net == 0.0 and g("CC Tips") == 0.0:
             continue
-        is_party = "Party" in block["headers"] and g("Party") > 0
+        name = raw_name.strip()
+        party_col_has_value = "Party" in block["headers"] and g("Party") > 0
+        name_flags_party = "(party)" in name.lower()
+        is_party = party_col_has_value or name_flags_party
         out.append(ShiftRow(
             date=block["date"],
-            raw_name=raw_name.strip(),
+            raw_name=name,
             cc_tips=g("CC Tips"),
-            party=g("Party") if is_party else 0.0,
+            party=g("Party") if party_col_has_value else 0.0,
             sa_tip_out=g("SA Tip Out"),
             bar_tipout=g("Bar Tipout"),
             total_tip_out=g("TotalTip Out"),
