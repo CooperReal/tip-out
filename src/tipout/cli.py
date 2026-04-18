@@ -119,6 +119,10 @@ def resolve_pending(config_path):
     emp_ws = wb["Employees"]
     alias_ws = wb["Name Aliases"]
 
+    # Track known canonicals so later `alias` decisions can reference
+    # `new_employee` canonicals added earlier in the same batch.
+    known_canonicals = set(roster.employees)
+
     for raw, decision in answers.items():
         kind = decision.get("decision")
         if kind == "new_employee":
@@ -126,9 +130,10 @@ def resolve_pending(config_path):
             role = decision.get("role", "")
             emp_ws.append([canonical, role, None, None, ""])
             alias_ws.append([raw, canonical])
+            known_canonicals.add(canonical)
         elif kind == "alias":
             canonical = decision["canonical_name"]
-            if canonical not in roster.employees:
+            if canonical not in known_canonicals:
                 raise click.ClickException(
                     f"Alias decision for {raw!r} references unknown canonical {canonical!r}"
                 )

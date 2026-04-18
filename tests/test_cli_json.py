@@ -162,6 +162,51 @@ def test_resolve_pending_ignore(tiny_runner_env):
     assert payload["status"] == "success"
 
 
+def test_ignore_filters_pos_only_name(tiny_runner_env):
+    """A POS name mapped to IGNORE_SENTINEL + no hours row should run cleanly."""
+    from tipout.runner import IGNORE_SENTINEL
+
+    env = tiny_runner_env
+
+    # Roster: Anthony as full employee; Jake only as an alias -> IGNORE_SENTINEL.
+    wb = Workbook()
+    emp = wb.active
+    emp.title = "Employees"
+    emp.append(["Canonical Name", "Role", "Active From", "Active To", "Notes"])
+    emp.append(["Anthony Garcia", "server", date(2025, 1, 1), None, ""])
+    aliases = wb.create_sheet("Name Aliases")
+    aliases.append(["Raw Name", "Canonical Name"])
+    aliases.append(["Anthony", "Anthony Garcia"])
+    aliases.append(["Jake", IGNORE_SENTINEL])
+    wb.save(env["roster_path"])
+
+    # Hours: only Anthony -- no Jake row at all.
+    hwb = Workbook()
+    hws = hwb.active
+    hws.title = "Hours"
+    hws.append(["Employee Name", "Date", "Hours Worked"])
+    hws.append(["Anthony Garcia", date(2025, 12, 29), 7.2])
+    hwb.save(env["hours_path"])
+
+    result = _invoke_run(env, json_flag=True)
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["status"] == "success"
+
+    # Summary has Anthony but not Jake.
+    assert env["summary_path"].exists()
+    swb = load_workbook(env["summary_path"])
+    ws = swb[swb.sheetnames[0]]
+    canonicals = [
+        ws.cell(row=r, column=1).value
+        for r in range(5, 25)
+        if ws.cell(row=r, column=1).value
+    ]
+    assert "Anthony Garcia" in canonicals
+    assert "Jake Purvis" not in canonicals
+    assert IGNORE_SENTINEL not in canonicals
+
+
 def test_resolve_pending_alias_requires_existing_canonical(tiny_runner_env):
     from tipout.cli import main
 
