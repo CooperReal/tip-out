@@ -4,6 +4,7 @@
 *.xlsm
 *.csv
 !tests/fixtures/tiny_pos.xlsx
+!tests/fixtures/periods/_synthetic/**
 
 # Runtime folders
 inputs/

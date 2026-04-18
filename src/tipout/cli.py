@@ -149,5 +149,36 @@ def resolve_pending(config_path):
     click.echo(f"Roster updated with {len(answers)} decision(s).")
 
 
+@main.command("test")
+@click.option("--fixture", "fixture_filter", default=None,
+              help="Only run fixtures matching this name (substring match).")
+def test_cmd(fixture_filter):
+    """Run regression harness against all period fixtures."""
+    from tipout.regression import list_fixtures, run_fixture
+
+    fixtures = list_fixtures()
+    if fixture_filter:
+        fixtures = [f for f in fixtures if fixture_filter in f.name]
+    if not fixtures:
+        click.echo("No fixtures found.", err=True)
+        raise SystemExit(2)
+
+    failed = 0
+    for fx in fixtures:
+        click.echo(f"Running fixture: {fx.name}")
+        diffs = run_fixture(fx)
+        if not diffs:
+            click.echo(f"  PASS")
+        else:
+            failed += 1
+            click.echo(f"  FAIL ({len(diffs)} diffs):")
+            for d in diffs[:20]:
+                click.echo(f"    {d.sheet}!{d.cell}: expected={d.expected!r} actual={d.actual!r}")
+            if len(diffs) > 20:
+                click.echo(f"    ... {len(diffs) - 20} more")
+    if failed:
+        raise SystemExit(1)
+
+
 if __name__ == "__main__":
     main()
