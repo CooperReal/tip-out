@@ -9,3 +9,16 @@ def test_load_roster_resolves_known_alias(tiny_roster):
 def test_unknown_name_returns_none(tiny_roster):
     roster = load_roster(tiny_roster)
     assert roster.resolve("Maya") is None
+
+def test_fuzzy_candidates_one_match(tiny_roster):
+    roster = load_roster(tiny_roster)
+    assert roster.fuzzy_candidates("Anthony") == ["Anthony Garcia"]
+    assert roster.fuzzy_candidates("anthony") == ["Anthony Garcia"]
+
+def test_fuzzy_candidates_two_matches(tiny_roster):
+    roster = load_roster(tiny_roster)
+    assert set(roster.fuzzy_candidates("Andrew")) == {"Andrew Roberts", "Andrew Neita"}
+
+def test_fuzzy_candidates_zero_matches(tiny_roster):
+    roster = load_roster(tiny_roster)
+    assert roster.fuzzy_candidates("Maya") == []

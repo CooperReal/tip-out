@@ -19,6 +19,14 @@ class Roster:
     def resolve(self, raw: str) -> str | None:
         return self.aliases.get(raw) or self.aliases.get(raw.strip())
 
+    def fuzzy_candidates(self, raw: str) -> list[str]:
+        """Return canonicals whose first name matches raw (case-insensitive, ignoring role tags like '(Xen)')."""
+        first = raw.split()[0].strip().lower().rstrip(",")
+        return [
+            e.canonical for e in self.employees.values()
+            if e.canonical.split()[0].lower() == first
+        ]
+
 def load_roster(path: Path) -> Roster:
     wb = load_workbook(path, data_only=True)
     emps: dict[str, Employee] = {}

@@ -11,6 +11,8 @@ def tiny_roster(tmp_path):
     emp.append(["Anthony Garcia", "server", _date(2025, 1, 1), None, ""])
     emp.append(["Jake Purvis", "bartender", _date(2025, 1, 1), None, ""])
     emp.append(["Kristin Bartosic", "bartender", _date(2025, 1, 1), None, ""])
+    emp.append(["Andrew Roberts", "server", _date(2025, 1, 1), None, ""])
+    emp.append(["Andrew Neita", "server", _date(2025, 1, 1), None, ""])
     aliases = wb.create_sheet("Name Aliases")
     aliases.append(["Raw Name", "Canonical Name"])
     aliases.append(["Anthony", "Anthony Garcia"])
