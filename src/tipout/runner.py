@@ -7,6 +7,7 @@ from tipout.hours import load_hours, validate_join
 from tipout.summary import append_period_tab
 from tipout.per_employee import append_period_tab_for_employee
 from tipout.period import PayPeriod
+from tipout.anomalies import check_all, write_report
 
 
 IGNORE_SENTINEL = "__IGNORE__"
@@ -45,3 +46,8 @@ def run(config, pos_path: Path, hours_path: Path, period: PayPeriod):
             [r for r in period_rows if r.canonical_name == canonical],
             [h for h in hours_entries if h.canonical == canonical],
         )
+    anomaly_path = config.summary_path.parent / "anomaly_report.xlsx"
+    anomalies = check_all(
+        period_rows, hours_entries, roster, config.summary_path, period
+    )
+    write_report(anomaly_path, anomalies, period)
