@@ -9,6 +9,9 @@ from tipout.per_employee import append_period_tab_for_employee
 from tipout.period import PayPeriod
 
 
+IGNORE_SENTINEL = "__IGNORE__"
+
+
 class UnresolvedNames(RuntimeError):
     def __init__(self, names: list[str]):
         self.names = names
@@ -24,9 +27,12 @@ def run(config, pos_path: Path, hours_path: Path, period: PayPeriod):
         raise UnresolvedNames(unknown)
     for r in shift_rows:
         r.canonical_name = resolved[r.raw_name]
+    # Drop ignored shift rows after resolution so they don't reach validation/emission.
+    shift_rows = [r for r in shift_rows if r.canonical_name != IGNORE_SENTINEL]
     hours_entries, hours_unknown = load_hours(hours_path, roster)
     if hours_unknown:
         raise UnresolvedNames(hours_unknown)
+    hours_entries = [h for h in hours_entries if h.canonical != IGNORE_SENTINEL]
     validate_join(shift_rows, hours_entries, period.start, period.end)
     period_rows = [r for r in shift_rows if period.start <= r.date <= period.end]
     append_period_tab(config.summary_path, period, period_rows, roster, hours_entries)

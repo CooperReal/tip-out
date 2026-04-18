@@ -1,3 +1,4 @@
+import json
 import click
 from datetime import date
 from pathlib import Path
@@ -15,6 +16,23 @@ def version():
     click.echo(__version__)
 
 
+def _write_pending_names(config_path: Path, names: list[str]) -> Path:
+    """Write a pending_names.json next to the config file describing unresolved names."""
+    path = config_path.parent / "pending_names.json"
+    payload = {
+        "status": "awaiting_input",
+        "unresolved_names": sorted(names),
+        "instructions": (
+            "Create pending_answers.json in the same directory with one key per "
+            "unresolved name. Each value: "
+            "{decision: 'new_employee'|'alias'|'ignore', canonical_name: str, role: str}. "
+            "Then re-run `tipout resolve-pending` followed by `tipout run`."
+        ),
+    }
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return path
+
+
 @main.command()
 @click.option("--period", "period_str", required=True,
               help="Pay period as 'YYYY-MM-DD:YYYY-MM-DD' (start:end inclusive).")
@@ -27,11 +45,13 @@ def version():
 @click.option("--hours", "hours_path", required=True,
               type=click.Path(exists=True, dir_okay=False, path_type=Path),
               help="Path to hours workbook.")
-def run(period_str, config_path, pos_path, hours_path):
+@click.option("--json", "json_output", is_flag=True, default=False,
+              help="Emit structured JSON status (for automation like Cowork).")
+def run(period_str, config_path, pos_path, hours_path, json_output):
     """Run a pay period end-to-end, producing summary + per-employee files."""
     from tipout.config import Config
     from tipout.period import PayPeriod
-    from tipout.runner import run as _run
+    from tipout.runner import run as _run, UnresolvedNames
 
     start_str, end_str = period_str.split(":", 1)
     start = date.fromisoformat(start_str)
@@ -39,8 +59,89 @@ def run(period_str, config_path, pos_path, hours_path):
     period = PayPeriod.from_dates(start, end)
 
     cfg = Config.load(config_path)
-    _run(cfg, pos_path, hours_path, period)
-    click.echo(f"Done. Pay period {period.start} to {period.end}.")
+    try:
+        _run(cfg, pos_path, hours_path, period)
+    except UnresolvedNames as e:
+        pending_path = _write_pending_names(config_path, e.names)
+        if json_output:
+            click.echo(json.dumps({
+                "status": "awaiting_input",
+                "reason": "unresolved_names",
+                "unresolved_names": sorted(e.names),
+                "pending_names_path": str(pending_path),
+            }))
+        else:
+            click.echo(
+                f"Awaiting input: {len(e.names)} unresolved name(s). "
+                f"See {pending_path}.",
+                err=True,
+            )
+        raise SystemExit(1)
+    except Exception as e:
+        if json_output:
+            click.echo(json.dumps({
+                "status": "error",
+                "error_type": type(e).__name__,
+                "message": str(e),
+            }))
+            raise SystemExit(2)
+        raise
+
+    if json_output:
+        click.echo(json.dumps({
+            "status": "success",
+            "period": f"{period.start.isoformat()}:{period.end.isoformat()}",
+        }))
+    else:
+        click.echo(f"Done. Pay period {period.start} to {period.end}.")
+
+
+@main.command("resolve-pending")
+@click.option("--config", "config_path", default="config.yaml",
+              type=click.Path(exists=True, dir_okay=False, path_type=Path),
+              help="Path to config.yaml (default: ./config.yaml).")
+def resolve_pending(config_path):
+    """Apply operator decisions from pending_answers.json to the roster."""
+    from tipout.config import Config
+    from tipout.roster import load_roster
+    from tipout.runner import IGNORE_SENTINEL
+    from openpyxl import load_workbook
+
+    cfg = Config.load(config_path)
+    answers_path = config_path.parent / "pending_answers.json"
+    if not answers_path.exists():
+        click.echo(f"No pending_answers.json at {answers_path}", err=True)
+        raise SystemExit(2)
+    answers = json.loads(answers_path.read_text(encoding="utf-8"))
+
+    roster = load_roster(cfg.roster_path)
+    wb = load_workbook(cfg.roster_path)
+    emp_ws = wb["Employees"]
+    alias_ws = wb["Name Aliases"]
+
+    for raw, decision in answers.items():
+        kind = decision.get("decision")
+        if kind == "new_employee":
+            canonical = decision["canonical_name"]
+            role = decision.get("role", "")
+            emp_ws.append([canonical, role, None, None, ""])
+            alias_ws.append([raw, canonical])
+        elif kind == "alias":
+            canonical = decision["canonical_name"]
+            if canonical not in roster.employees:
+                raise click.ClickException(
+                    f"Alias decision for {raw!r} references unknown canonical {canonical!r}"
+                )
+            alias_ws.append([raw, canonical])
+        elif kind == "ignore":
+            alias_ws.append([raw, IGNORE_SENTINEL])
+        else:
+            raise click.ClickException(f"Unknown decision for {raw!r}: {kind!r}")
+
+    wb.save(cfg.roster_path)
+    (config_path.parent / "pending_names.json").unlink(missing_ok=True)
+    answers_path.unlink()
+    click.echo(f"Roster updated with {len(answers)} decision(s).")
 
 
 if __name__ == "__main__":
