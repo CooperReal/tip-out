@@ -93,6 +93,24 @@ All code is under `src/tipout/`:
 
 The tool is append-only and deterministic: re-running a period overwrites nothing by accident, and the only way a name gets into the summary is via the roster. All human judgment (spelling decisions, new hires) lives in `roster.xlsx` and is edited by hand in Excel. There is no DB, no state file, no network.
 
+## Using this from Claude Cowork / Claude Code
+
+A Cowork-compatible skill ships with this repo at `skills/tipout/SKILL.md`. To install it so Cowork / Claude Code can drive the tool on your behalf:
+
+**Windows:**
+```
+mkdir %USERPROFILE%\.claude\skills\tipout
+copy skills\tipout\SKILL.md %USERPROFILE%\.claude\skills\tipout\SKILL.md
+```
+
+**macOS / Linux:**
+```
+mkdir -p ~/.claude/skills/tipout
+cp skills/tipout/SKILL.md ~/.claude/skills/tipout/SKILL.md
+```
+
+After restarting Cowork / Claude Code, ask it to "run the tipout for the pay period starting on <date>" and it will invoke the CLI, walk you through any unknown names, and hand you the finished workbook.
+
 ## Deeper context
 
 - Design rationale: [`docs/plans/2026-04-18-surfing-deer-tipout-automation-design.md`](docs/plans/2026-04-18-surfing-deer-tipout-automation-design.md)
