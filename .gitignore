@@ -9,6 +9,10 @@
 output/
 unknown_names.txt
 
+# graphify knowledge-graph outputs (regenerable; converted/ mirrors gitignored xlsx data)
+graphify-out/
+graphify-runs/
+
 # Python
 __pycache__/
 *.pyc
