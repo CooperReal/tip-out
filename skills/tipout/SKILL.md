@@ -68,6 +68,7 @@ The summary workbook is append-only and will reject a duplicate tab with `Tab '.
 
 - `tipout run --period <start>:<end> --pos <file> [--config <path>]` — primary command.
 - `tipout bootstrap-roster --from-summary <file> --out <file> [--force]` — one-time roster seeding.
+- `tipout check-roster <file>` — validate a roster workbook for structural and semantic issues (orphan aliases, duplicates, first-name collisions). Run this after any manual roster edit or when the user "uploads a new roster."
 - `tipout version` — print tool version.
 
 All options are discoverable via `tipout <cmd> --help`.

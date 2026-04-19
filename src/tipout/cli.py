@@ -99,5 +99,35 @@ def bootstrap_roster_cmd(summary_path, out_path, force):
     )
 
 
+@main.command("check-roster")
+@click.argument(
+    "roster_path",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+)
+def check_roster_cmd(roster_path):
+    """Validate a roster.xlsx for structural and semantic issues."""
+    from tipout.validator import validate_roster
+
+    issues = validate_roster(roster_path)
+    if not issues:
+        click.echo(f"{roster_path}: OK (no issues).")
+        return
+
+    errors = [i for i in issues if i.severity == "error"]
+    warnings = [i for i in issues if i.severity == "warning"]
+
+    for i in errors:
+        click.echo(f"  ERROR: {i.message}", err=True)
+    for i in warnings:
+        click.echo(f"  WARN:  {i.message}", err=True)
+
+    click.echo(
+        f"{roster_path}: {len(errors)} error(s), {len(warnings)} warning(s).",
+        err=True,
+    )
+    if errors:
+        raise SystemExit(1)
+
+
 if __name__ == "__main__":
     main()

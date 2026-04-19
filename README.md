@@ -46,6 +46,21 @@ Open `unknown_names.txt`, then open `roster.xlsx` in Excel. For each unknown nam
 
 Save `roster.xlsx`, close it, and re-run the same `tipout run` command. Repeat if more unknowns turn up.
 
+## Validating a roster
+
+Before trusting a roster (especially one someone else prepared or one you just edited), run:
+
+```
+.venv/Scripts/tipout check-roster roster.xlsx
+```
+
+The command reports:
+
+- **Errors** — missing sheets, blank canonical names, aliases pointing at non-existent canonicals, malformed headers. A run with any error exits non-zero; `tipout run` will likely fail too.
+- **Warnings** — duplicate canonicals, duplicate raw aliases, first-name collisions that will need explicit aliases to disambiguate. These don't block `tipout run` but are likely future bugs.
+
+Zero errors + zero warnings prints `OK (no issues).`.
+
 ## Starting from scratch: bootstrap a roster
 
 If you don't yet have a `roster.xlsx` but do have a prior, hand-maintained 2-week summary workbook, you can seed a roster from it:
