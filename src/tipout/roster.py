@@ -1,23 +1,33 @@
-# src/tipout/roster.py
 from dataclasses import dataclass
 from pathlib import Path
+
 from openpyxl import load_workbook
+
 
 @dataclass
 class Employee:
     canonical: str
     role: str
 
+
 @dataclass
 class Roster:
     employees: dict[str, Employee]
     aliases: dict[str, str]  # raw -> canonical
 
+    def __post_init__(self):
+        # Case-insensitive lookup indexes: map lowercase-stripped key -> canonical.
+        self._employees_ci = {k.strip().lower(): k for k in self.employees}
+        self._aliases_ci = {k.strip().lower(): v for k, v in self.aliases.items()}
+
     def resolve(self, raw: str) -> str | None:
-        key = raw.strip() if isinstance(raw, str) else raw
-        if key in self.employees:
-            return key
-        return self.aliases.get(raw) or self.aliases.get(key)
+        if not isinstance(raw, str):
+            return None
+        key = raw.strip().lower()
+        if key in self._employees_ci:
+            return self._employees_ci[key]
+        return self._aliases_ci.get(key)
+
 
 def load_roster(path: Path) -> Roster:
     wb = load_workbook(path, data_only=True)
