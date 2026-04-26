@@ -21,10 +21,13 @@ def test_run_end_to_end(tiny_runner_env):
     assert wb.sheetnames == ["12.29 to 01.11.2026"]
 
     ws = wb["12.29 to 01.11.2026"]
+    # Employees live at rows 3..N (after row 1 title + row 2 header). The trailing
+    # totals row carries the literal "Daily Total" label — exclude it.
     canonicals = [
         ws.cell(row=r, column=1).value
-        for r in range(5, 20)
+        for r in range(3, 20)
         if ws.cell(row=r, column=1).value
+        and ws.cell(row=r, column=1).value != "Daily Total"
     ]
     assert canonicals == ["Anthony Garcia", "Jake Purvis"]
 

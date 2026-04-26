@@ -28,8 +28,9 @@ POS = ROOT / "2026 SD Daily Tipout Worksheet.xlsx"
 HAND = ROOT / "2026 SD 2 WK Tip Summary By employee.xlsx"
 CONFIG = ROOT / "config.yaml"
 
-TOTAL_TIPS_COL = 31
-EMPLOYEE_ROW_RANGE = range(5, 70)
+# Hand workbook has its grand total in col AE (= 31); ours has it in col P (= 16).
+HAND_TOTAL_TIPS_COL = 31
+TOTAL_TIPS_COL = 16
 HAND_TOTAL_ROW_RANGE = range(55, 70)
 # Hand workbook has per-employee subtotals; grand total is the one > $1000.
 HAND_TOTAL_MIN = 1000
@@ -148,18 +149,15 @@ def run_one_period(cfg: Config, period: PayPeriod) -> str:
 
 
 def summary_total(summary_path: Path, tab: str) -> float | None:
+    """Read the grand total written by summary.py — last row, col AE."""
     if not summary_path.exists():
         return None
     wb = load_workbook(summary_path, data_only=True)
     if tab not in wb.sheetnames:
         return None
     ws = wb[tab]
-    total = 0.0
-    for r in EMPLOYEE_ROW_RANGE:
-        v = ws.cell(row=r, column=TOTAL_TIPS_COL).value
-        if isinstance(v, (int, float)):
-            total += v
-    return total
+    v = ws.cell(row=ws.max_row, column=TOTAL_TIPS_COL).value
+    return v if isinstance(v, (int, float)) else None
 
 
 def hand_total(hand_wb, tab: str) -> float | None:
@@ -167,7 +165,7 @@ def hand_total(hand_wb, tab: str) -> float | None:
         if candidate in hand_wb.sheetnames:
             ws = hand_wb[candidate]
             for r in HAND_TOTAL_ROW_RANGE:
-                v = ws.cell(row=r, column=TOTAL_TIPS_COL).value
+                v = ws.cell(row=r, column=HAND_TOTAL_TIPS_COL).value
                 if isinstance(v, (int, float)) and v > HAND_TOTAL_MIN:
                     return v
     return None
