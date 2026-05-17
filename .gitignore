@@ -4,6 +4,7 @@
 *.xlsm
 *.csv
 !tests/fixtures/tiny_pos.xlsx
+!tests/fixtures/tiny_time_clock.csv
 
 # Runtime folders
 output/
