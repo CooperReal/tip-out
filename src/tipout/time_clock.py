@@ -62,9 +62,15 @@ def parse_time_clock(path: Path) -> list[HoursRow]:
                     f"Time clock CSV: shift row {first!r} appears before any "
                     "block header (NAME - ROLE)."
                 )
-            try:
-                hours = float(raw[_DURATION_COL]) if len(raw) > _DURATION_COL else 0.0
-            except ValueError:
+            if len(raw) <= _DURATION_COL or not raw[_DURATION_COL].strip():
                 hours = 0.0
+            else:
+                try:
+                    hours = float(raw[_DURATION_COL])
+                except ValueError as exc:
+                    raise ValueError(
+                        f"Time clock CSV: unparseable Duration value "
+                        f"{raw[_DURATION_COL]!r} in shift row starting {first!r}"
+                    ) from exc
             rows.append(HoursRow(raw_name=current_name, date=d, hours=hours))
     return rows

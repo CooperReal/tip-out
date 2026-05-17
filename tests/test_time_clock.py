@@ -50,3 +50,15 @@ def test_parse_raises_on_shift_row_before_any_block_header(tmp_path):
     )
     with pytest.raises(ValueError):
         parse_time_clock(bad)
+
+
+def test_parse_raises_on_unparseable_duration_value(tmp_path):
+    bad = tmp_path / "bad_duration.csv"
+    bad.write_text(
+        "ANTHONY GARCIA - WAIT Mon 12-29-2025 - Sun 01-04-2026,,,,,,,\n"
+        "Start Date,Start Time,End Date,End Time,Reported Tips,Regular Hours,Overtime Hours,Duration (Hours)\n"
+        '"Mon, 12-29-25",3:00 PM,"Mon, 12-29-25",10:30 PM,0,7.5,0,abc\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="Duration"):
+        parse_time_clock(bad)
