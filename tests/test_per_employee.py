@@ -52,8 +52,8 @@ def test_build_grid_layout_and_totals():
 
     # Header row.
     assert grid[1] == [
-        "Date", "CC Tips", "SA Tip Out", "Bar Tipout",
-        "Total Tip Out", "Barback", "Bartender", "Net Tip",
+        "Date", "Hours Worked", "CC Tips", "SA Tip Out", "Bar Tipout",
+        "Total Tip Out", "Barback", "Bartender", "Net Tip", "$/hr",
     ]
 
     # 2 header rows + 14 day rows + 1 totals row = 17 rows.
@@ -64,22 +64,26 @@ def test_build_grid_layout_and_totals():
     assert day1[0] == date(2025, 12, 29)
     assert all(v is None for v in day1[1:])
 
-    # Day 2 = 12/30 = first shift.
+    # Day 2 = 12/30 = first shift. CC Tips is now col index 2 (B is Hours).
     day2 = grid[3]
     assert day2[0] == date(2025, 12, 30)
-    assert day2[1] == 231.0      # CC Tips
-    assert day2[2] == 10.53      # SA Tip Out
-    assert day2[3] == 33.90      # Bar Tipout
-    assert day2[4] == 44.43      # Total Tip Out
-    assert day2[5] is None       # Barback (zero)
-    assert day2[6] == 105.80     # Bartender
-    assert day2[7] == 292.37     # Net Tip
+    assert day2[1] is None       # Hours Worked (not provided)
+    assert day2[2] == 231.0      # CC Tips
+    assert day2[3] == 10.53      # SA Tip Out
+    assert day2[4] == 33.90      # Bar Tipout
+    assert day2[5] == 44.43      # Total Tip Out
+    assert day2[6] is None       # Barback (zero)
+    assert day2[7] == 105.80     # Bartender
+    assert day2[8] == 292.37     # Net Tip
+    assert day2[9] is None       # $/hr (day rows always blank)
 
     # Totals row.
     totals = grid[-1]
     assert totals[0] == "Total"
-    assert totals[1] == 511.57   # 231.00 + 280.57
-    assert totals[7] == 632.38   # 292.37 + 340.01
+    assert totals[1] is None     # Hours total — none provided
+    assert totals[2] == 511.57   # CC Tips total
+    assert totals[8] == 632.38   # Net Tip total
+    assert totals[9] is None     # $/hr blank when hours total is 0
 
 
 def test_build_grid_omits_other_employees():
@@ -91,7 +95,7 @@ def test_build_grid_omits_other_employees():
     ]
 
     grid = build_grid(period, "Yvonne Lewis", rows)
-    assert grid[-1][7] == 100.0   # totals: only Yvonne counted
+    assert grid[-1][8] == 100.0   # totals: only Yvonne counted
 
 
 def test_build_grid_excludes_out_of_period():
@@ -102,7 +106,7 @@ def test_build_grid_excludes_out_of_period():
     ]
 
     grid = build_grid(period, "Yvonne Lewis", rows)
-    assert grid[-1][7] == 50.0
+    assert grid[-1][8] == 50.0
 
 
 def test_append_period_tab_writes_file_with_styling(tmp_path):
@@ -129,11 +133,13 @@ def test_append_period_tab_writes_file_with_styling(tmp_path):
     # Day 2 = 12/30 has CC Tips populated. (openpyxl reads back date → datetime.)
     cell_date = ws.cell(row=4, column=1).value
     assert (cell_date.year, cell_date.month, cell_date.day) == (2025, 12, 30)
-    assert ws.cell(row=4, column=2).value == 231.0
+    # CC Tips now at col 3 (col 2 = Hours Worked, blank here).
+    assert ws.cell(row=4, column=2).value is None
+    assert ws.cell(row=4, column=3).value == 231.0
 
     # Number formats applied.
     assert ws.cell(row=3, column=1).number_format == DATE_FORMAT
-    assert ws.cell(row=4, column=2).number_format == TIP_FORMAT
+    assert ws.cell(row=4, column=3).number_format == TIP_FORMAT
 
     # Frozen pane locks title + header.
     assert ws.freeze_panes == "A3"
@@ -143,7 +149,7 @@ def test_append_period_tab_writes_file_with_styling(tmp_path):
 
     # Totals row at row 17, bold.
     assert ws.cell(row=17, column=1).value == "Total"
-    assert ws.cell(row=17, column=2).font.bold is True
+    assert ws.cell(row=17, column=3).font.bold is True
 
 
 def test_append_period_tab_appends_without_overwriting(tmp_path):
@@ -174,3 +180,43 @@ def test_safe_filename_strips_illegal_chars():
     assert _safe_filename("Anthony Garcia") == "Anthony Garcia"
     assert _safe_filename('Bad/Name?') == "Bad_Name_"
     assert _safe_filename("Marcus, Eric") == "Marcus, Eric"  # comma is legal
+
+
+def test_build_grid_with_hours_populates_b_and_j():
+    period = PayPeriod.from_dates(date(2025, 12, 29), date(2026, 1, 11))
+    rows = [
+        _shift(date(2025, 12, 30), "Yvonne Lewis", net_tip=200.0),
+        _shift(date(2025, 12, 31), "Yvonne Lewis", net_tip=300.0),
+    ]
+    hours_by_date = {
+        date(2025, 12, 30): 7.5,
+        date(2025, 12, 31): 5.0,
+        # Day with hours but no tips — still surfaces in Hours column.
+        date(2026, 1, 1): 4.0,
+    }
+
+    grid = build_grid(period, "Yvonne Lewis", rows, hours_by_date=hours_by_date)
+
+    # Day 2 = 12/30
+    assert grid[3][1] == 7.5
+    # Day 3 = 12/31
+    assert grid[4][1] == 5.0
+    # Day 4 = 1/1 (no tip shift, but hours present)
+    assert grid[5][1] == 4.0
+    # Day 5 onward: no hours, no tips → blank
+    assert grid[6][1] is None
+
+    # Totals row.
+    totals = grid[-1]
+    assert totals[1] == 16.5    # hours total
+    # $/hr = Net Tip total (500.0) / Hours total (16.5) → 30.30
+    assert totals[9] == round(500.0 / 16.5, 2)
+
+
+def test_build_grid_with_zero_hours_total_leaves_per_hr_blank():
+    period = PayPeriod.from_dates(date(2025, 12, 29), date(2026, 1, 11))
+    rows = [_shift(date(2025, 12, 30), "Yvonne Lewis", net_tip=50.0)]
+    grid = build_grid(period, "Yvonne Lewis", rows, hours_by_date={})
+    totals = grid[-1]
+    assert totals[1] is None    # no hours
+    assert totals[9] is None    # $/hr left blank, not zero

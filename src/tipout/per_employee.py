@@ -1,9 +1,9 @@
 """Per-employee tip-out workbooks.
 
 One file per canonical employee under `<output_dir>/per-employee/<Name>.xlsx`.
-One tab per pay period, appended (existing tabs untouched). Columns mirror the
-shift-row fields available from the POS parser; Hours Worked and $/hr are NOT
-written because the tool has no hours data source today.
+One tab per pay period, appended (existing tabs untouched). Layout matches
+the hand-done Yvonne.xlsx reference: Hours Worked at col B, tip columns
+C..I, $/hr at col J on the totals row only.
 """
 
 from collections import defaultdict
@@ -31,22 +31,28 @@ TIP_COLUMNS: list[tuple[str, str]] = [
     ("Bartender", "bartender"),
     ("Net Tip", "net_tip"),
 ]
-TOTAL_COLS = 1 + len(TIP_COLUMNS)  # Date + 7 tip columns = 8
+HOURS_HEADER = "Hours Worked"
+PER_HR_HEADER = "$/hr"
+TOTAL_COLS = 1 + 1 + len(TIP_COLUMNS) + 1  # Date + Hours + 7 tips + $/hr = 10
 
 # Layout (1-indexed Excel rows/cols).
 TITLE_ROW = 1
 HEADER_ROW = 2
 FIRST_DATA_ROW = 3
 DATE_COL = 1
-FIRST_TIP_COL = 2
-NET_TIP_COL = TOTAL_COLS  # rightmost column
+HOURS_COL = 2
+FIRST_TIP_COL = 3
+NET_TIP_COL = 2 + len(TIP_COLUMNS)        # = 9 (col I)
+PER_HR_COL = TOTAL_COLS                    # = 10 (col J)
 
 COLUMN_WIDTHS: dict[str, float] = {
-    "A": 11.0,   # Date (e.g. "Mon 12/29")
-    "B": 11.0, "C": 11.0, "D": 11.0,
-    "E": 13.0,   # Total Tip Out — slightly wider header
-    "F": 11.0, "G": 11.0,
-    "H": 12.0,   # Net Tip
+    "A": 11.0,   # Date
+    "B": 12.0,   # Hours Worked
+    "C": 11.0, "D": 11.0, "E": 11.0,
+    "F": 13.0,   # Total Tip Out
+    "G": 11.0, "H": 11.0,
+    "I": 12.0,   # Net Tip
+    "J": 9.0,    # $/hr
 }
 
 THIN = Side(style="thin", color="B0B0B0")
@@ -65,13 +71,20 @@ def _safe_filename(canonical: str) -> str:
 
 
 def build_grid(
-    period: PayPeriod, canonical: str, shift_rows: list[ShiftRow]
+    period: PayPeriod,
+    canonical: str,
+    shift_rows: list[ShiftRow],
+    hours_by_date: dict[date, float] | None = None,
 ) -> list[list[Any]]:
     """Return a 2D grid for one employee's per-period tab.
 
     Layout: row 1 title, row 2 column headers, rows 3..16 = 14 day rows,
     row 17 = totals. Day rows always present (blanks where no shift).
+    When ``hours_by_date`` is provided, col B is populated per-day and col J
+    on the totals row holds Net Tip total ÷ Hours total (blank if Hours = 0).
     """
+    hours_by_date = hours_by_date or {}
+
     in_period = [
         r
         for r in shift_rows
@@ -98,14 +111,23 @@ def build_grid(
     row1: list[Any] = [None] * TOTAL_COLS
     row1[0] = title
 
-    row2: list[Any] = ["Date"] + [label for label, _ in TIP_COLUMNS]
+    row2: list[Any] = (
+        ["Date", HOURS_HEADER]
+        + [label for label, _ in TIP_COLUMNS]
+        + [PER_HR_HEADER]
+    )
 
     grid: list[list[Any]] = [row1, row2]
 
     totals: dict[str, float] = {attr: 0.0 for _, attr in TIP_COLUMNS}
+    hours_total = 0.0
     for d in dates_in_period:
         row: list[Any] = [None] * TOTAL_COLS
         row[0] = d
+        hours = hours_by_date.get(d, 0.0)
+        if hours:
+            row[HOURS_COL - 1] = _round2(hours)
+            hours_total += hours
         day_data = by_date.get(d)
         if day_data:
             for col_idx, (_, attr) in enumerate(TIP_COLUMNS, start=FIRST_TIP_COL - 1):
@@ -113,12 +135,18 @@ def build_grid(
                 if v != 0:
                     row[col_idx] = v
                     totals[attr] += v
+        # $/hr column (J) is always blank on day rows.
         grid.append(row)
 
     totals_row: list[Any] = [None] * TOTAL_COLS
     totals_row[0] = "Total"
+    if hours_total:
+        totals_row[HOURS_COL - 1] = _round2(hours_total)
     for col_idx, (_, attr) in enumerate(TIP_COLUMNS, start=FIRST_TIP_COL - 1):
         totals_row[col_idx] = _round2(totals[attr])
+    net_tip_total = totals[TIP_COLUMNS[-1][1]]
+    if hours_total > 0:
+        totals_row[PER_HR_COL - 1] = round(net_tip_total / hours_total, 2)
     grid.append(totals_row)
 
     return grid
@@ -151,10 +179,11 @@ def _apply_styling(ws, totals_row: int) -> None:
     for r in range(FIRST_DATA_ROW, totals_row + 1):
         ws.cell(row=r, column=DATE_COL).number_format = DATE_FORMAT
 
-    # Tip number format on tip columns + totals row.
+    # Tip number format on Hours, all tip columns, and the $/hr cell on totals.
     for r in range(FIRST_DATA_ROW, totals_row + 1):
-        for c in range(FIRST_TIP_COL, TOTAL_COLS + 1):
+        for c in range(HOURS_COL, NET_TIP_COL + 1):
             ws.cell(row=r, column=c).number_format = TIP_FORMAT
+    ws.cell(row=totals_row, column=PER_HR_COL).number_format = TIP_FORMAT
 
     # Bold totals row.
     bold = Font(bold=True)
@@ -180,6 +209,7 @@ def append_period_tab_for_employee(
     period: PayPeriod,
     canonical: str,
     shift_rows: list[ShiftRow],
+    hours_by_date: dict[date, float] | None = None,
 ) -> Path:
     """Append a new period tab to <output_dir>/per-employee/<canonical>.xlsx.
 
@@ -204,7 +234,7 @@ def append_period_tab_for_employee(
         )
 
     ws = wb.create_sheet(tab)
-    grid = build_grid(period, canonical, shift_rows)
+    grid = build_grid(period, canonical, shift_rows, hours_by_date=hours_by_date)
     for r, row_values in enumerate(grid, start=1):
         for c, val in enumerate(row_values, start=1):
             if val is not None:
