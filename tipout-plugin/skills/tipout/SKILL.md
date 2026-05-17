@@ -49,11 +49,12 @@ Always `cd` into the project directory first so relative paths in `config.yaml` 
 
 ```bash
 cd "${user_config.project_dir}"
-tipout run --period 2026-01-12:2026-01-25 --pos "<POS-file.xlsx>"
+tipout run --period 2026-01-12:2026-01-25 --pos "<POS-file.xlsx>" --hours "<TimeClock.csv>"
 ```
 
 - `--period` is `YYYY-MM-DD:YYYY-MM-DD`, inclusive, must be exactly 14 days apart.
 - `--pos` is the POS daily workbook path (quote it if the name has spaces).
+- `--hours` is optional — when supplied, the Toast Time Clock CSV populates the `Hours Worked` column and `$/hr` cell on each per-employee period tab. Omit it and those cells stay blank.
 - `--config` defaults to `./config.yaml`.
 
 On success the tool prints `Done.` and writes/updates `output/summary.xlsx`.
@@ -75,13 +76,15 @@ After the user confirms the mappings, update `roster.xlsx` using `openpyxl` (pre
 
 **Do not guess mappings without user confirmation** — misattributed tips directly cause payroll errors. If a raw name could plausibly match more than one existing canonical (e.g. two Andrews in the roster), ask the user which one.
 
+The same flow applies when an unknown name appears in the time clock CSV: the tool exits 1 and writes `unknown_hours_names.txt`. Add the new name as an alias or new employee in `roster.xlsx`, then re-run with the same arguments.
+
 ## Re-running an already-completed period
 
 The summary workbook is append-only and will reject a duplicate tab with `Tab '...' already exists — delete to re-run`. To re-run intentionally (e.g. after a correction), delete the tab for that period in `output/summary.xlsx` first, or move/delete the file entirely.
 
 ## Full command reference
 
-- `tipout run --period <start>:<end> --pos <file> [--config <path>]` — primary command.
+- `tipout run --period <start>:<end> --pos <file> [--hours <csv>] [--config <path>]` — primary command.
 - `tipout bootstrap-roster --from-summary <file> --out <file> [--force]` — one-time roster seeding.
 - `tipout check-roster <file>` — validate a roster workbook for structural and semantic issues (orphan aliases, duplicates, first-name collisions). Run this after any manual roster edit or when the user "uploads a new roster."
 - `tipout version` — print tool version.
@@ -92,6 +95,8 @@ All options are discoverable via `tipout <cmd> --help`.
 
 - `output/summary.xlsx` — the 2-week summary workbook. One tab per pay period. Col A = canonical name, col B = most-recent raw spelling seen that period, cols C..AC = daily Net Tip per day (14 days), col AE = period total.
 - `unknown_names.txt` — only present when a run hit unresolved names. Safe to delete after resolving.
+- `unknown_hours_names.txt` — only present when a run hit unresolved names from the time-clock CSV. Safe to delete after resolving.
+- `output/per-employee/<Name>.xlsx` — one workbook per canonical employee; layout matches the hand-done `Yvonne.xlsx` reference (`Hours Worked` at col B, `$/hr` on totals row col J).
 
 ## Troubleshooting
 
