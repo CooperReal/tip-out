@@ -189,6 +189,8 @@ def test_run_raises_unresolved_hours_names_before_writing_any_file(
     assert "Stranger Person" in exc.value.names
     # Critical: no per-employee files were written.
     assert not per_emp_dir.exists()
+    # Same invariant for the summary file: no partial state on disk.
+    assert not cfg.summary_path.exists()
 
 
 def test_run_filters_hours_to_pay_period(tiny_runner_env, tmp_path):

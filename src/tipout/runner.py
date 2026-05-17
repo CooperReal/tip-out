@@ -24,7 +24,7 @@ class UnresolvedHoursNames(RuntimeError):
 
     def __init__(self, names: list[str]):
         self.names = sorted(set(names))
-        super().__init__(f"Unresolved hours names: {self.names}")
+        super().__init__(f"Unresolved (hours): {self.names}")
 
 
 def _aggregate_hours(
