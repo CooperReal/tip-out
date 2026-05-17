@@ -38,23 +38,45 @@ def version():
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
     help="Path to config.yaml (default: ./config.yaml).",
 )
-def run(period_str, pos_path, config_path):
+@click.option(
+    "--hours",
+    "hours_path",
+    default=None,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help="Path to Toast Time Clock CSV (optional). Populates per-employee Hours Worked + $/hr.",
+)
+def run(period_str, pos_path, config_path, hours_path):
     """Append a pay-period tab to the 2-week summary workbook."""
     from tipout.config import Config
     from tipout.period import PayPeriod
-    from tipout.runner import run as _run, UnresolvedNames
+    from tipout.runner import run as _run, UnresolvedNames, UnresolvedHoursNames
 
     start_str, end_str = period_str.split(":", 1)
     period = PayPeriod.from_dates(date.fromisoformat(start_str), date.fromisoformat(end_str))
     cfg = Config.load(config_path)
 
     try:
-        _run(cfg, pos_path, period)
+        _run(cfg, pos_path, period, hours_path=hours_path)
     except UnresolvedNames as exc:
         unknowns_path = config_path.parent / "unknown_names.txt"
         unknowns_path.write_text("\n".join(exc.names) + "\n", encoding="utf-8")
         click.echo(
             f"Found {len(exc.names)} unknown name(s) in the POS file for this period.",
+            err=True,
+        )
+        click.echo(f"List written to {unknowns_path}.", err=True)
+        click.echo(
+            "Open roster.xlsx in Excel, add each unknown name to either the "
+            "Employees sheet (as a new canonical) or the Name Aliases sheet "
+            "(pointing at an existing canonical). Then re-run.",
+            err=True,
+        )
+        raise SystemExit(1)
+    except UnresolvedHoursNames as exc:
+        unknowns_path = config_path.parent / "unknown_hours_names.txt"
+        unknowns_path.write_text("\n".join(exc.names) + "\n", encoding="utf-8")
+        click.echo(
+            f"Found {len(exc.names)} unknown name(s) in the time clock CSV for this period.",
             err=True,
         )
         click.echo(f"List written to {unknowns_path}.", err=True)

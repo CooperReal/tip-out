@@ -222,3 +222,55 @@ def test_run_filters_hours_to_pay_period(tiny_runner_env, tmp_path):
     ws = anthony["12.29 to 01.11.2026"]
     # Hours total = only the 12-29 shift (6.0); the 01-12 shift is outside this period.
     assert ws.cell(row=17, column=2).value == 6.0
+
+
+def test_cli_run_with_hours_flag(tiny_runner_env):
+    from tipout.cli import main
+
+    env = tiny_runner_env
+    result = CliRunner().invoke(
+        main,
+        [
+            "run",
+            "--period", "2025-12-29:2026-01-11",
+            "--config", str(env["config_path"]),
+            "--pos", str(env["pos_path"]),
+            "--hours", str(env["hours_path"]),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "Done." in result.output
+
+    per_emp_dir = env["summary_path"].parent / "per-employee"
+    wb = load_workbook(per_emp_dir / "Anthony Garcia.xlsx")
+    ws = wb["12.29 to 01.11.2026"]
+    assert ws.cell(row=17, column=2).value == 6.0  # Hours total
+
+
+def test_cli_writes_unknown_hours_file_on_resolution_failure(tiny_runner_env, tmp_path):
+    from tipout.cli import main
+
+    env = tiny_runner_env
+    bad_csv = tmp_path / "bad_hours.csv"
+    bad_csv.write_text(
+        "STRANGER PERSON - WAIT Mon 12-29-2025 - Sun 01-04-2026,,,,,,,\n"
+        "Start Date,Start Time,End Date,End Time,Reported Tips,Regular Hours,Overtime Hours,Duration (Hours)\n"
+        '"Mon, 12-29-25",3:00 PM,"Mon, 12-29-25",10:30 PM,0,5.0,0,5.0\n'
+        "Total,,,,0,5.0,0,5.0\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "run",
+            "--period", "2025-12-29:2026-01-11",
+            "--config", str(env["config_path"]),
+            "--pos", str(env["pos_path"]),
+            "--hours", str(bad_csv),
+        ],
+    )
+    assert result.exit_code == 1
+    unknowns_path = env["config_path"].parent / "unknown_hours_names.txt"
+    assert unknowns_path.exists()
+    assert "Stranger Person" in unknowns_path.read_text(encoding="utf-8")
