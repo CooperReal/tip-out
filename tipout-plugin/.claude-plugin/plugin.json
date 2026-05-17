@@ -1,0 +1,15 @@
+{
+  "name": "tipout",
+  "version": "0.1.0",
+  "description": "Surfing Deer 2-week tip-out summary runner. Generates a new pay-period tab in the summary workbook from a POS daily export.",
+  "author": {
+    "name": "Cooper"
+  },
+  "keywords": ["tipout", "payroll", "surfing-deer", "excel"],
+  "userConfig": {
+    "project_dir": {
+      "description": "Absolute path to the tip-out project directory on this machine (the folder containing config.yaml, roster.xlsx, and output/).",
+      "sensitive": false
+    }
+  }
+}

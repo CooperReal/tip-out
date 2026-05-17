@@ -1,12 +1,25 @@
 ---
 name: tipout
 description: Generate the 2-week tip-out summary for Surfing Deer by running the `tipout` CLI. Use this skill any time the user wants to run a pay-period tip-out, produce or update the 2-week summary workbook from a POS daily export, reconcile tips payable, or add/edit employees in the tip-out roster. Trigger when the user mentions a POS file, pay period, tip summary, Surfing Deer payroll, or an unknown-name / alias situation in the tipout tool. Do NOT trigger for general-purpose spreadsheet editing, payroll math unrelated to tip distribution, or Watersound/WVM (different tool).
-allowed-tools: Bash(cd *) Bash(.venv/Scripts/tipout *) Bash(ls *) Bash(cat *) Read Edit
+allowed-tools: Bash(cd *) Bash(tipout *) Bash(ls *) Bash(cat *) Read Edit
 ---
 
 # Tipout — Surfing Deer pay-period summary runner
 
 Use this skill to produce a new pay-period tab in the Surfing Deer 2-week summary workbook from a POS daily export.
+
+## One-time setup (per machine)
+
+Before this skill works on a new machine:
+
+1. The `tipout` CLI must be on `PATH`. From a checkout of the `tip-out` repo:
+   ```bash
+   pipx install .          # preferred — isolated, on PATH everywhere
+   # or
+   pip install -e .        # editable install into the active env
+   ```
+   Verify with `tipout version`.
+2. The project directory must contain `config.yaml`, `roster.xlsx`, and an `output/` folder. Its absolute path is supplied to this plugin at install time as `${user_config.project_dir}`.
 
 ## What the tool does
 
@@ -17,24 +30,26 @@ Use this skill to produce a new pay-period tab in the Surfing Deer 2-week summar
 
 ## Required inputs
 
-The project root must contain (or the user must have):
+Inside `${user_config.project_dir}`:
 
 - `config.yaml` — YAML with `anchor_date`, `roster_path`, `summary_path`.
 - `roster.xlsx` — has `Employees` sheet (canonical names) and `Name Aliases` sheet (raw-name → canonical).
-- A POS daily workbook path.
+- A POS daily workbook path (can be anywhere; passed as `--pos`).
 
 If `roster.xlsx` does not yet exist, seed it from an existing hand-done 2-week summary:
 
 ```bash
-.venv/Scripts/tipout bootstrap-roster --from-summary "<existing-2-week-summary.xlsx>" --out roster.xlsx
+cd "${user_config.project_dir}"
+tipout bootstrap-roster --from-summary "<existing-2-week-summary.xlsx>" --out roster.xlsx
 ```
 
 ## Running a pay period
 
-Work from the `tip-out` project directory. Typical invocation:
+Always `cd` into the project directory first so relative paths in `config.yaml` resolve:
 
 ```bash
-.venv/Scripts/tipout run --period 2026-01-12:2026-01-25 --pos "<POS-file.xlsx>"
+cd "${user_config.project_dir}"
+tipout run --period 2026-01-12:2026-01-25 --pos "<POS-file.xlsx>"
 ```
 
 - `--period` is `YYYY-MM-DD:YYYY-MM-DD`, inclusive, must be exactly 14 days apart.
@@ -80,6 +95,7 @@ All options are discoverable via `tipout <cmd> --help`.
 
 ## Troubleshooting
 
+- `tipout: command not found` (or similar) → the CLI isn't on `PATH` on this machine. Run the one-time setup above.
 - `ValueError: Tab '...' already exists` → the period already has a tab. Delete it in Excel or delete the whole `summary.xlsx` to re-run.
 - `TypeError: anchor_date must be a YYYY-MM-DD date` → the config YAML has `anchor_date` wrapped in quotes. Remove the quotes so YAML parses it as a date.
 - Any `SchemaError` from the parser → the POS file's layout changed. Do not try to patch around it; ask the user to verify the POS export is the expected weekly-tabs workbook.
