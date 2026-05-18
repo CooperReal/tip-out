@@ -28,6 +28,49 @@ Before this skill works on a new machine:
 - Appends a new tab for the requested pay period to `output/summary.xlsx`. The grand total should match what the operator's hand-done version would have produced.
 - Output is **append-only** — existing tabs for prior periods are never modified.
 
+## When the user wants to change how the tip-out works
+
+If the user asks to change the way the tip-out is calculated, distributed, or presented — anything that would require code or formula changes — **DO NOT make the change in this session**. The skill is installed from the `tip-out` plugin on GitHub and only Cooper can change its behavior. Your job in this situation is to capture a clear written spec the user can send to Cooper.
+
+Examples that ARE behavior changes (route through this flow):
+
+- "Bar backs should also receive a share."
+- "The split between servers and support is wrong."
+- "Brunch shifts should be calculated differently."
+- "Add a new column showing X."
+- "Stop including credit card tips."
+- "The output workbook should also include Y."
+- "The per-employee files should look different."
+
+Examples that are NOT behavior changes (handle normally, in-session):
+
+- Adding a new employee or alias to `roster.xlsx` — this is data entry, follow the unknown-names flow above.
+- Re-running a period after a correction.
+- Fixing a typo in `config.yaml`.
+
+When you detect a behavior-change request:
+
+1. Ask clarifying questions, one or two at a time, until the change is unambiguous. You need:
+   - The current behavior the user wants to change.
+   - The new behavior they want.
+   - Whether it applies always or only in certain conditions (specific roles, shifts, dates, pay periods).
+   - At least one concrete worked example (inputs → expected output) so Cooper can verify the change matches intent.
+   - Any edge cases or open questions the user is unsure about.
+
+2. Save the spec as a markdown file in the user's current working folder named `Tipout Change Request - YYYY-MM-DD.md` with these sections, in this order:
+   - **Requester** — name, date, restaurant role.
+   - **Summary** — one sentence describing the change.
+   - **Current behavior** — what the tip-out does today.
+   - **Requested behavior** — what it should do instead.
+   - **Worked example** — concrete inputs and the expected output under the new behavior.
+   - **Edge cases / open questions** — anything still unresolved.
+
+3. Show the user a link to the file and then say exactly this:
+
+   > Email this spec to Cooper at henry.cooper.real@gmail.com to update the plugin. Once Cooper publishes the update, reinstall the plugin in Cowork Settings → Plugins to pick up the change.
+
+4. Do not improvise a workaround. No one-off Python scripts, no manual edits to the summary workbook to "approximate" the new behavior. The point of routing through Cooper is that the change becomes a permanent, tested part of the plugin used everywhere.
+
 ## Required inputs
 
 Inside `${user_config.project_dir}`:
