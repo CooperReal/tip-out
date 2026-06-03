@@ -20,6 +20,7 @@ from tipout.summary import _tab_name
 
 TIP_FORMAT = '_("$"* #,##0.00_);_("$"* \\(#,##0.00\\);_("$"* "-"??_);_(@_)'
 DATE_FORMAT = "ddd m/d"
+HOURS_FORMAT = "0.00"  # plain two-decimal number — hours are not currency
 
 # (header label, ShiftRow attribute). Date column is special-cased.
 TIP_COLUMNS: list[tuple[str, str]] = [
@@ -179,9 +180,13 @@ def _apply_styling(ws, totals_row: int) -> None:
     for r in range(FIRST_DATA_ROW, totals_row + 1):
         ws.cell(row=r, column=DATE_COL).number_format = DATE_FORMAT
 
-    # Tip number format on Hours, all tip columns, and the $/hr cell on totals.
+    # Hours Worked (col B) is a plain number, not currency — day rows and total.
     for r in range(FIRST_DATA_ROW, totals_row + 1):
-        for c in range(HOURS_COL, NET_TIP_COL + 1):
+        ws.cell(row=r, column=HOURS_COL).number_format = HOURS_FORMAT
+
+    # Currency format on the tip columns (C..I) and the $/hr cell on totals (J).
+    for r in range(FIRST_DATA_ROW, totals_row + 1):
+        for c in range(FIRST_TIP_COL, NET_TIP_COL + 1):
             ws.cell(row=r, column=c).number_format = TIP_FORMAT
     ws.cell(row=totals_row, column=PER_HR_COL).number_format = TIP_FORMAT
 
