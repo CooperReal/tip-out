@@ -1,0 +1,65 @@
+name: Release
+
+# Build the standalone Windows engine (tipout.exe) and the Cowork plugin zip,
+# then publish them to a GitHub Release. Triggered by pushing a tag like v0.2.0.
+#
+#   git tag v0.2.0 && git push origin v0.2.0
+#
+# The release's `latest/download/tipout.exe` URL is what the skill downloads.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Derive version from tag
+        id: version
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Stamp version into package and plugin
+        shell: pwsh
+        run: |
+          $v = "${{ steps.version.outputs.version }}"
+          (Get-Content src/tipout/__init__.py) `
+            -replace '__version__ = ".*"', "__version__ = ""$v""" |
+            Set-Content src/tipout/__init__.py
+          $p = Get-Content tipout-plugin/.claude-plugin/plugin.json -Raw | ConvertFrom-Json
+          $p.version = $v
+          $p | ConvertTo-Json -Depth 10 | Set-Content tipout-plugin/.claude-plugin/plugin.json
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller .
+
+      - name: Build tipout.exe
+        run: >
+          pyinstaller --onefile --name tipout
+          --collect-submodules openpyxl
+          packaging/pyinstaller_entry.py
+
+      - name: Package the plugin
+        shell: pwsh
+        run: Compress-Archive -Path tipout-plugin/* -DestinationPath tipout-plugin.zip -Force
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/tipout.exe
+            tipout-plugin.zip

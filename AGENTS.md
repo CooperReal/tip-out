@@ -71,7 +71,7 @@ This is the only reason the CLI can exit non-zero after starting real work. The 
 
 | File | What it owns | Called by |
 |---|---|---|
-| `src/tipout/cli.py` | Click entry point. Commands: `version`, `run`, `bootstrap-roster`, `check-roster`. CLI-level `UnresolvedNames` catch → `unknown_names.txt`. | end user, `bootstrap.py` (indirectly) |
+| `src/tipout/cli.py` | Click entry point. Commands: `version`, `init`, `run`, `bootstrap-roster`, `check-roster`. CLI-level `UnresolvedNames` catch → `unknown_names.txt`. | end user, `bootstrap.py` (indirectly) |
 | `src/tipout/runner.py` | The 15-line orchestration. | `cli.run`, tests |
 | `src/tipout/config.py` | YAML config loader. | `cli`, `run_all.py`, tests |
 | `src/tipout/period.py` | `PayPeriod` dataclass + anchor math. | `cli`, `run_all.py`, tests |
@@ -102,9 +102,11 @@ Run with `.venv/Scripts/pytest`. No test requires network or real Excel files on
 
 ## Cowork / Claude-Code integration
 
-`skills/tipout/SKILL.md` is a standalone Agent Skill that wraps this CLI. It exists so an agent (Cowork, Claude Code, etc.) can drive the tool: run the period, follow the unknown-names loop, hand the operator the finished workbook.
+`tipout-plugin/skills/tipout/SKILL.md` is an Agent Skill that wraps this CLI, shipped inside the `tipout-plugin/` Cowork plugin. It exists so an agent (Cowork, Claude Code, etc.) can drive the tool: set up the engine, run the period, follow the unknown-names loop, hand the operator the finished workbook.
 
-Its role in the graph: the skill file references the CLI commands (`tipout run`, `check-roster`, `bootstrap-roster`), implements the "Agent Skill" + "SKILL.md frontmatter" concepts from `docs/cowork-skill-refs/`, and carries the `do-not-guess` rule as a `rationale_for` edge back into `UnresolvedNames`.
+**Distribution model (see `docs/superpowers/specs/2026-06-02-cowork-packaging-design.md`):** operators never install Python. The plugin is skill-only; the skill downloads a self-contained `tipout.exe` (built by `.github/workflows/release.yml` with PyInstaller) into `%USERPROFILE%\Documents\Tipout` on first run, and re-downloads it when the user says "update tipout". Releasing is `git tag vX.Y.Z && git push` — CI stamps the version, builds the exe + `tipout-plugin.zip`, and publishes a GitHub Release. The skill pulls from `releases/latest/download/tipout.exe`.
+
+Its role in the graph: the skill references the CLI commands (`tipout init`, `tipout run`, `check-roster`, `bootstrap-roster`), implements the "Agent Skill" + "SKILL.md frontmatter" concepts from `docs/cowork-skill-refs/`, and carries the `do-not-guess` rule as a `rationale_for` edge back into `UnresolvedNames`.
 
 Background reading if you're editing the skill or packaging it as a Cowork plugin: `docs/cowork-skill-refs/index.md` (read order in there).
 

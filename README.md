@@ -95,7 +95,7 @@ Fixtures live under `tests/fixtures/`. A synthetic POS workbook drives the end-t
 
 All code is under `src/tipout/`:
 
-- `cli.py` — click entry point. Three commands: `version`, `run`, `bootstrap-roster`.
+- `cli.py` — click entry point. Commands: `version`, `init`, `run`, `bootstrap-roster`, `check-roster`.
 - `config.py` — loads `config.yaml` into a `Config` dataclass; resolves relative paths against the config file's directory.
 - `period.py` — `PayPeriod` value object plus anchor-based pay-period math (14-day blocks from `anchor_date`).
 - `pos_parser.py` — reads the POS daily workbook. Detects day-blocks by header content, normalizes column aliases, produces `ShiftRow` records. Raises `SchemaError` on unrecognizable sheets.
@@ -108,23 +108,32 @@ All code is under `src/tipout/`:
 
 The tool is append-only and deterministic: re-running a period overwrites nothing by accident, and the only way a name gets into the summary is via the roster. All human judgment (spelling decisions, new hires) lives in `roster.xlsx` and is edited by hand in Excel. There is no DB, no state file, no network.
 
-## Using this from Claude Cowork / Claude Code
+## Using this from Claude Cowork (for operators)
 
-A Cowork-compatible skill ships with this repo at `skills/tipout/SKILL.md`. To install it so Cowork / Claude Code can drive the tool on your behalf:
+The operator does **not** install Python or clone this repo. The tool ships as a Cowork plugin (`tipout-plugin/`) that bundles the skill; the skill itself downloads a self-contained engine (`tipout.exe`) on first use.
 
-**Windows:**
+**One-time install (Windows):**
+
+1. Download `tipout-plugin.zip` from the [latest release](https://github.com/CooperReal/tip-out/releases/latest).
+2. In Claude Desktop → **Cowork** tab → **Customize** → **Browse plugins** → **upload** the zip.
+3. Make sure code execution / Bash is enabled in Cowork.
+
+That's it. The first time you ask Cowork to run a tip-out, it creates `Documents\Tipout`, downloads the engine, and scaffolds `config.yaml` + `roster.xlsx`. To get a newer version later, just tell Cowork **"update tipout"** — it re-downloads the engine and tells you what changed. No reinstalling, no GitHub, no terminal.
+
+Then ask it to "run the tipout for the pay period starting on <date>" and it will run the engine, walk you through any unknown names, and hand you the finished workbook.
+
+## Releasing (for the maintainer)
+
+Releases are built by GitHub Actions on a Windows runner (`.github/workflows/release.yml`). To cut a new version:
+
 ```
-mkdir %USERPROFILE%\.claude\skills\tipout
-copy skills\tipout\SKILL.md %USERPROFILE%\.claude\skills\tipout\SKILL.md
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
-**macOS / Linux:**
-```
-mkdir -p ~/.claude/skills/tipout
-cp skills/tipout/SKILL.md ~/.claude/skills/tipout/SKILL.md
-```
+CI stamps the version from the tag into `src/tipout/__init__.py` and `plugin.json`, builds `tipout.exe` with PyInstaller, packages `tipout-plugin.zip`, and publishes both as assets on a GitHub Release. The skill always pulls the engine from `releases/latest/download/tipout.exe`, so operators get the new engine the moment they say "update tipout" — no plugin reinstall needed unless the skill instructions themselves changed (then re-upload the new `tipout-plugin.zip`).
 
-After restarting Cowork / Claude Code, ask it to "run the tipout for the pay period starting on <date>" and it will invoke the CLI, walk you through any unknown names, and hand you the finished workbook.
+The repo's Releases must be public so the download URL works without a login.
 
 ## Deeper context
 

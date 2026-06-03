@@ -1,25 +1,79 @@
 ---
 name: tipout
-description: Generate the 2-week tip-out summary for Surfing Deer by running the `tipout` CLI. Use this skill any time the user wants to run a pay-period tip-out, produce or update the 2-week summary workbook from a POS daily export, reconcile tips payable, or add/edit employees in the tip-out roster. Trigger when the user mentions a POS file, pay period, tip summary, Surfing Deer payroll, or an unknown-name / alias situation in the tipout tool. Do NOT trigger for general-purpose spreadsheet editing, payroll math unrelated to tip distribution, or Watersound/WVM (different tool).
-allowed-tools: Bash(cd *) Bash(tipout *) Bash(ls *) Bash(cat *) Read Edit
+description: Generate the 2-week tip-out summary for Surfing Deer by running the `tipout` engine. Use this skill any time the user wants to run a pay-period tip-out, produce or update the 2-week summary workbook from a POS daily export, reconcile tips payable, add/edit employees in the tip-out roster, or update the tipout tool to the latest version. Trigger when the user mentions a POS file, pay period, tip summary, Surfing Deer payroll, an unknown-name / alias situation, or says "update tipout". Do NOT trigger for general-purpose spreadsheet editing, payroll math unrelated to tip distribution, or Watersound/WVM (different tool).
+allowed-tools: Bash(cd *) Bash(ls *) Bash(cat *) Bash(mkdir *) Bash(curl *) Bash(powershell *) Bash(./tipout.exe *) Read Edit
 ---
 
 # Tipout — Surfing Deer pay-period summary runner
 
 Use this skill to produce a new pay-period tab in the Surfing Deer 2-week summary workbook from a POS daily export.
 
-## One-time setup (per machine)
+The tool has two parts, and you (the agent) manage both so the user never has to:
 
-Before this skill works on a new machine:
+- **This skill** — the instructions you're reading. Installed once as a Cowork plugin.
+- **The engine** — a single self-contained program, `tipout.exe`, that does the calculation. No Python or other install is needed; you download it automatically.
 
-1. The `tipout` CLI must be on `PATH`. From a checkout of the `tip-out` repo:
-   ```bash
-   pipx install .          # preferred — isolated, on PATH everywhere
-   # or
-   pip install -e .        # editable install into the active env
-   ```
-   Verify with `tipout version`.
-2. The project directory must contain `config.yaml`, `roster.xlsx`, and an `output/` folder. Its absolute path is supplied to this plugin at install time as `${user_config.project_dir}`.
+The project folder lives at a fixed location: **`%USERPROFILE%\Documents\Tipout`** (in Bash on this Windows machine, that is `"$HOME/Documents/Tipout"`). Everything — the engine, config, roster, and output — lives there. **Always `cd` into that folder first**, then call the engine as `./tipout.exe`.
+
+## Setup (first run — fully automatic)
+
+Before doing anything else, make sure the engine exists. Run:
+
+```bash
+ls "$HOME/Documents/Tipout/tipout.exe"
+```
+
+If it is missing, set it up without asking the user to do anything manual:
+
+```bash
+mkdir -p "$HOME/Documents/Tipout/output"
+cd "$HOME/Documents/Tipout"
+curl -L -o tipout.exe https://github.com/CooperReal/tip-out/releases/latest/download/tipout.exe
+powershell -Command "Unblock-File -Path 'tipout.exe'"
+./tipout.exe version > version.txt
+```
+
+Then scaffold the config and an empty roster (skip files that already exist; it refuses to overwrite without `--force`):
+
+```bash
+cd "$HOME/Documents/Tipout"
+./tipout.exe init
+```
+
+If the user has an existing hand-done 2-week summary workbook, seed the roster from it instead:
+
+```bash
+cd "$HOME/Documents/Tipout"
+./tipout.exe init --from-summary "<path-to-their-existing-summary.xlsx>" --force
+```
+
+Confirm it worked with `cd "$HOME/Documents/Tipout" && ./tipout.exe version`, then tell the user setup is complete.
+
+## Updating tipout ("update tipout")
+
+When the user says they want the latest version (e.g. after Cooper publishes a change they requested), they do **not** reinstall anything. You update the engine for them:
+
+```bash
+cd "$HOME/Documents/Tipout"
+cat version.txt                 # the version currently installed
+curl -sL https://api.github.com/repos/CooperReal/tip-out/releases/latest
+```
+
+From the API response, read `tag_name` (the latest version) and `body` (the release notes / what changed).
+
+- If the installed version already matches `tag_name`, tell the user they're already up to date and stop.
+- Otherwise download the new engine and record the version:
+
+  ```bash
+  cd "$HOME/Documents/Tipout"
+  curl -L -o tipout.exe https://github.com/CooperReal/tip-out/releases/latest/download/tipout.exe
+  powershell -Command "Unblock-File -Path 'tipout.exe'"
+  ./tipout.exe version > version.txt
+  ```
+
+  Then summarize for the user what changed, using the release notes (`body`) from the API response.
+
+The roster, config, and previous output in `Documents\Tipout` are untouched by an update.
 
 ## What the tool does
 
@@ -30,7 +84,7 @@ Before this skill works on a new machine:
 
 ## When the user wants to change how the tip-out works
 
-If the user asks to change the way the tip-out is calculated, distributed, or presented — anything that would require code or formula changes — **DO NOT make the change in this session**. The skill is installed from the `tip-out` plugin on GitHub and only Cooper can change its behavior. Your job in this situation is to capture a clear written spec the user can send to Cooper.
+If the user asks to change the way the tip-out is calculated, distributed, or presented — anything that would require code or formula changes — **DO NOT make the change in this session**. Only Cooper can change the engine's behavior. Your job in this situation is to capture a clear written spec the user can send to Cooper.
 
 Examples that ARE behavior changes (route through this flow):
 
@@ -67,32 +121,25 @@ When you detect a behavior-change request:
 
 3. Show the user a link to the file and then say exactly this:
 
-   > Email this spec to Cooper at henry.cooper.real@gmail.com to update the plugin. Once Cooper publishes the update, reinstall the plugin in Cowork Settings → Plugins to pick up the change.
+   > Email this spec to Cooper at henry.cooper.real@gmail.com to update the plugin. Once Cooper publishes the update, just tell me "update tipout" and I'll pull in the new version for you.
 
-4. Do not improvise a workaround. No one-off Python scripts, no manual edits to the summary workbook to "approximate" the new behavior. The point of routing through Cooper is that the change becomes a permanent, tested part of the plugin used everywhere.
+4. Do not improvise a workaround. No one-off Python scripts, no manual edits to the summary workbook to "approximate" the new behavior. The point of routing through Cooper is that the change becomes a permanent, tested part of the tool used everywhere.
 
 ## Required inputs
 
-Inside `${user_config.project_dir}`:
+Inside `Documents\Tipout`:
 
-- `config.yaml` — YAML with `anchor_date`, `roster_path`, `summary_path`.
-- `roster.xlsx` — has `Employees` sheet (canonical names) and `Name Aliases` sheet (raw-name → canonical).
+- `config.yaml` — YAML with `anchor_date`, `roster_path`, `summary_path`. Created by `./tipout.exe init`.
+- `roster.xlsx` — has `Employees` sheet (canonical names) and `Name Aliases` sheet (raw-name → canonical). Created by `./tipout.exe init`.
 - A POS daily workbook path (can be anywhere; passed as `--pos`).
-
-If `roster.xlsx` does not yet exist, seed it from an existing hand-done 2-week summary:
-
-```bash
-cd "${user_config.project_dir}"
-tipout bootstrap-roster --from-summary "<existing-2-week-summary.xlsx>" --out roster.xlsx
-```
 
 ## Running a pay period
 
 Always `cd` into the project directory first so relative paths in `config.yaml` resolve:
 
 ```bash
-cd "${user_config.project_dir}"
-tipout run --period 2026-01-12:2026-01-25 --pos "<POS-file.xlsx>" --hours "<TimeClock.csv>"
+cd "$HOME/Documents/Tipout"
+./tipout.exe run --period 2026-01-12:2026-01-25 --pos "<POS-file.xlsx>" --hours "<TimeClock.csv>"
 ```
 
 - `--period` is `YYYY-MM-DD:YYYY-MM-DD`, inclusive, must be exactly 14 days apart.
@@ -115,7 +162,7 @@ When this happens, present the list of unknown names to the user and ask, for ea
 - **An alias for an existing employee** (e.g. "Anthony" → "Anthony Garcia"). Find likely canonicals by reading `roster.xlsx`'s `Employees` sheet. Add a row to the `Name Aliases` sheet: `Raw Name | Canonical Name`.
 - **A new employee**. Add a row to the `Employees` sheet: `Canonical Name | Role | Active From | Active To | Notes`. Role is free text (e.g. `server`, `bartender`, `support`). Active From can be today's date; the other fields can be blank.
 
-After the user confirms the mappings, update `roster.xlsx` using `openpyxl` (preferred) or by asking the user to save their own Excel edits, then re-run the same `tipout run` command. Repeat until the tool exits 0.
+After the user confirms the mappings, update `roster.xlsx` using `openpyxl` (preferred) or by asking the user to save their own Excel edits, then re-run the same `./tipout.exe run` command. Repeat until the tool exits 0.
 
 **Do not guess mappings without user confirmation** — misattributed tips directly cause payroll errors. If a raw name could plausibly match more than one existing canonical (e.g. two Andrews in the roster), ask the user which one.
 
@@ -127,12 +174,15 @@ The summary workbook is append-only and will reject a duplicate tab with `Tab '.
 
 ## Full command reference
 
-- `tipout run --period <start>:<end> --pos <file> [--hours <csv>] [--config <path>]` — primary command.
-- `tipout bootstrap-roster --from-summary <file> --out <file> [--force]` — one-time roster seeding.
-- `tipout check-roster <file>` — validate a roster workbook for structural and semantic issues (orphan aliases, duplicates, first-name collisions). Run this after any manual roster edit or when the user "uploads a new roster."
-- `tipout version` — print tool version.
+Run all of these from inside `Documents\Tipout` (`cd "$HOME/Documents/Tipout"` first):
 
-All options are discoverable via `tipout <cmd> --help`.
+- `./tipout.exe init [--dir <path>] [--from-summary <file>] [--anchor YYYY-MM-DD] [--force]` — scaffold a fresh project (`config.yaml`, `roster.xlsx`, `output/`). `--from-summary` seeds the roster from an existing hand-done summary.
+- `./tipout.exe run --period <start>:<end> --pos <file> [--hours <csv>] [--config <path>]` — primary command.
+- `./tipout.exe bootstrap-roster --from-summary <file> --out <file> [--force]` — seed only the roster from an existing summary.
+- `./tipout.exe check-roster <file>` — validate a roster workbook for structural and semantic issues (orphan aliases, duplicates, first-name collisions). Run this after any manual roster edit or when the user "uploads a new roster."
+- `./tipout.exe version` — print tool version.
+
+All options are discoverable via `./tipout.exe <cmd> --help`.
 
 ## Output
 
@@ -143,7 +193,8 @@ All options are discoverable via `tipout <cmd> --help`.
 
 ## Troubleshooting
 
-- `tipout: command not found` (or similar) → the CLI isn't on `PATH` on this machine. Run the one-time setup above.
+- `tipout.exe` missing or `No such file` → run the **Setup (first run)** steps above to download it.
+- Windows SmartScreen / antivirus warns about `tipout.exe` → the `Unblock-File` step in setup clears the "downloaded from the internet" mark. You always run the engine from the command line (never a double-click), so the SmartScreen pop-up does not apply. If antivirus quarantines it, ask the user to allow the file, or tell Cooper.
 - `ValueError: Tab '...' already exists` → the period already has a tab. Delete it in Excel or delete the whole `summary.xlsx` to re-run.
 - `TypeError: anchor_date must be a YYYY-MM-DD date` → the config YAML has `anchor_date` wrapped in quotes. Remove the quotes so YAML parses it as a date.
 - Any `SchemaError` from the parser → the POS file's layout changed. Do not try to patch around it; ask the user to verify the POS export is the expected weekly-tabs workbook.
