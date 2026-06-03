@@ -5,6 +5,7 @@ from openpyxl import load_workbook
 
 from tipout.per_employee import (
     DATE_FORMAT,
+    HOURS_FORMAT,
     TIP_FORMAT,
     _safe_filename,
     append_period_tab_for_employee,
@@ -140,6 +141,9 @@ def test_append_period_tab_writes_file_with_styling(tmp_path):
     # Number formats applied.
     assert ws.cell(row=3, column=1).number_format == DATE_FORMAT
     assert ws.cell(row=4, column=3).number_format == TIP_FORMAT
+    # Hours Worked (col B) is a plain number, not currency — day rows and total.
+    assert ws.cell(row=4, column=2).number_format == HOURS_FORMAT
+    assert ws.cell(row=17, column=2).number_format == HOURS_FORMAT
 
     # Frozen pane locks title + header.
     assert ws.freeze_panes == "A3"
@@ -220,3 +224,33 @@ def test_build_grid_with_zero_hours_total_leaves_per_hr_blank():
     totals = grid[-1]
     assert totals[1] is None    # no hours
     assert totals[9] is None    # $/hr left blank, not zero
+
+
+def test_hours_column_uses_plain_number_not_currency_format(tmp_path):
+    """Hours Worked (col B) renders as a plain number; tips and $/hr stay currency.
+
+    Regression for the change request: col B was inheriting the currency
+    format, so e.g. 7.55 hours displayed as $7.55. Mirrors Yvonne's example.
+    """
+    period = PayPeriod.from_dates(date(2025, 12, 29), date(2026, 1, 11))
+    rows = [_shift(date(2025, 12, 30), "Yvonne Lewis", net_tip=292.37)]
+    hours_by_date = {date(2025, 12, 30): 7.55, date(2025, 12, 31): 6.6}
+
+    written = append_period_tab_for_employee(
+        tmp_path, period, "Yvonne Lewis", rows, hours_by_date=hours_by_date
+    )
+    ws = load_workbook(written)["12.29 to 01.11.2026"]
+
+    # Hours column (B) is a plain number on day rows AND the totals row.
+    for r in range(3, 18):  # rows 3..17 = 14 day rows + totals
+        assert ws.cell(row=r, column=2).number_format == HOURS_FORMAT
+    assert ws.cell(row=4, column=2).value == 7.55       # value unchanged
+    assert ws.cell(row=17, column=2).value == 14.15     # hours total
+
+    # Tip columns (C..I) keep currency on day rows and the totals row.
+    for c in range(3, 10):
+        assert ws.cell(row=4, column=c).number_format == TIP_FORMAT
+        assert ws.cell(row=17, column=c).number_format == TIP_FORMAT
+
+    # $/hr (col J) on the totals row stays currency.
+    assert ws.cell(row=17, column=10).number_format == TIP_FORMAT
