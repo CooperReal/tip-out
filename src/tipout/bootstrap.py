@@ -10,8 +10,8 @@ from openpyxl import load_workbook, Workbook
 
 @dataclass
 class RosterSnapshot:
-    employees: dict[str, str]     # canonical -> role ("" if unknown)
-    aliases: dict[str, str]       # raw -> canonical
+    employees: dict[str, str]  # canonical -> role ("" if unknown)
+    aliases: dict[str, str]  # raw -> canonical
 
 
 def extract_roster_from_summary(summary_path: Path) -> RosterSnapshot:

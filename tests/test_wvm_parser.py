@@ -16,6 +16,7 @@ def wvm_path(tmp_path):
 
 def test_fixture_builds_expected_sheets(wvm_path):
     from openpyxl import load_workbook
+
     names = [n.strip() for n in load_workbook(wvm_path).sheetnames]
     assert "12.29.25" in names
     assert "Sheet1" in names
@@ -105,7 +106,7 @@ def test_parse_non_wvm_file_raises(tmp_path):
 def test_iter_daily_names_includes_zero_rows_and_groups(wvm_path):
     pairs = list(iter_daily_names(wvm_path))
     names = {n for n, _g in pairs}
-    assert "Heather" in names          # zero-net row still yielded (unlike parse_workbook)
+    assert "Heather" in names  # zero-net row still yielded (unlike parse_workbook)
     assert "Cristian Cedeo" in names
     # junk col-A label must never surface as a group
     assert all(g != "10.19.2222025" for _n, g in pairs)

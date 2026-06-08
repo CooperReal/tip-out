@@ -28,7 +28,9 @@ def test_parse_attributes_midnight_crossing_to_start_date():
 def test_parse_keeps_each_shift_separate_for_same_day_multi_role():
     """Aggregation across roles is the runner's job, not the parser's."""
     rows = parse_time_clock(FIXTURE)
-    anthony_1229 = [r.hours for r in rows if r.raw_name == "Anthony Garcia" and r.date == date(2025, 12, 29)]
+    anthony_1229 = [
+        r.hours for r in rows if r.raw_name == "Anthony Garcia" and r.date == date(2025, 12, 29)
+    ]
     assert sorted(anthony_1229) == [4.0, 7.5]
 
 
@@ -44,7 +46,7 @@ def test_parse_raises_on_shift_row_before_any_block_header(tmp_path):
     """A date-like row with no preceding block header is a schema error."""
     bad = tmp_path / "bad.csv"
     bad.write_text(
-        'Start Date,Start Time,End Date,End Time,Reported Tips,Regular Hours,Overtime Hours,Duration (Hours)\n'
+        "Start Date,Start Time,End Date,End Time,Reported Tips,Regular Hours,Overtime Hours,Duration (Hours)\n"
         '"Mon, 12-29-25",3:00 PM,"Mon, 12-29-25",10:30 PM,0,7.5,0,7.5\n',
         encoding="utf-8",
     )

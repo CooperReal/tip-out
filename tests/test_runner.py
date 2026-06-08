@@ -27,8 +27,7 @@ def test_run_end_to_end(tiny_runner_env):
     canonicals = [
         ws.cell(row=r, column=1).value
         for r in range(3, 20)
-        if ws.cell(row=r, column=1).value
-        and ws.cell(row=r, column=1).value != "Daily Total"
+        if ws.cell(row=r, column=1).value and ws.cell(row=r, column=1).value != "Daily Total"
     ]
     assert canonicals == ["Anthony Garcia", "Jake Purvis"]
 
@@ -80,6 +79,7 @@ def test_cli_run_writes_unknowns_file_and_exits_nonzero(tiny_runner_env, tmp_pat
 
     # Point config at the broken roster.
     import yaml
+
     cfg_text = env["config_path"].read_text(encoding="utf-8")
     cfg_data = yaml.safe_load(cfg_text)
     cfg_data["roster_path"] = str(broken_roster)
@@ -89,9 +89,12 @@ def test_cli_run_writes_unknowns_file_and_exits_nonzero(tiny_runner_env, tmp_pat
         main,
         [
             "run",
-            "--period", "2025-12-29:2026-01-11",
-            "--config", str(env["config_path"]),
-            "--pos", str(env["pos_path"]),
+            "--period",
+            "2025-12-29:2026-01-11",
+            "--config",
+            str(env["config_path"]),
+            "--pos",
+            str(env["pos_path"]),
         ],
     )
     assert result.exit_code == 1
@@ -108,9 +111,12 @@ def test_cli_run_success(tiny_runner_env):
         main,
         [
             "run",
-            "--period", "2025-12-29:2026-01-11",
-            "--config", str(env["config_path"]),
-            "--pos", str(env["pos_path"]),
+            "--period",
+            "2025-12-29:2026-01-11",
+            "--config",
+            str(env["config_path"]),
+            "--pos",
+            str(env["pos_path"]),
         ],
     )
     assert result.exit_code == 0, result.output
@@ -148,7 +154,7 @@ def test_run_without_hours_writes_blank_hours_columns(tiny_runner_env):
     cfg = Config.load(env["config_path"])
     period = PayPeriod.from_dates(date(2025, 12, 29), date(2026, 1, 11))
 
-    run(cfg, env["pos_path"], period)    # no hours_path
+    run(cfg, env["pos_path"], period)  # no hours_path
 
     per_emp_dir = cfg.summary_path.parent / "per-employee"
     anthony = load_workbook(per_emp_dir / "Anthony Garcia.xlsx")
@@ -161,9 +167,7 @@ def test_run_without_hours_writes_blank_hours_columns(tiny_runner_env):
     assert ws.cell(row=17, column=2).value is None
 
 
-def test_run_raises_unresolved_hours_names_before_writing_any_file(
-    tiny_runner_env, tmp_path
-):
+def test_run_raises_unresolved_hours_names_before_writing_any_file(tiny_runner_env, tmp_path):
     from tipout.runner import run, UnresolvedHoursNames
     from tipout.config import Config
     from tipout.period import PayPeriod
@@ -233,10 +237,14 @@ def test_cli_run_with_hours_flag(tiny_runner_env):
         main,
         [
             "run",
-            "--period", "2025-12-29:2026-01-11",
-            "--config", str(env["config_path"]),
-            "--pos", str(env["pos_path"]),
-            "--hours", str(env["hours_path"]),
+            "--period",
+            "2025-12-29:2026-01-11",
+            "--config",
+            str(env["config_path"]),
+            "--pos",
+            str(env["pos_path"]),
+            "--hours",
+            str(env["hours_path"]),
         ],
     )
     assert result.exit_code == 0, result.output
@@ -304,6 +312,7 @@ def test_wvm_dangling_alias_raises(tiny_wvm_runner_env):
     env = tiny_wvm_runner_env
     # Point an alias at a canonical absent from Employees -> dangling.
     from openpyxl import load_workbook as _lw
+
     rwb = _lw(env["roster_path"])
     rwb["Name Aliases"].append(["Ornella", "Ghost Person"])  # overrides Ornella mapping
     rwb.save(env["roster_path"])
@@ -330,10 +339,14 @@ def test_cli_writes_unknown_hours_file_on_resolution_failure(tiny_runner_env, tm
         main,
         [
             "run",
-            "--period", "2025-12-29:2026-01-11",
-            "--config", str(env["config_path"]),
-            "--pos", str(env["pos_path"]),
-            "--hours", str(bad_csv),
+            "--period",
+            "2025-12-29:2026-01-11",
+            "--config",
+            str(env["config_path"]),
+            "--pos",
+            str(env["pos_path"]),
+            "--hours",
+            str(bad_csv),
         ],
     )
     assert result.exit_code == 1

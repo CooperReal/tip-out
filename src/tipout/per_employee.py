@@ -43,17 +43,20 @@ FIRST_DATA_ROW = 3
 DATE_COL = 1
 HOURS_COL = 2
 FIRST_TIP_COL = 3
-NET_TIP_COL = 2 + len(TIP_COLUMNS)        # = 9 (col I)
-PER_HR_COL = TOTAL_COLS                    # = 10 (col J)
+NET_TIP_COL = 2 + len(TIP_COLUMNS)  # = 9 (col I)
+PER_HR_COL = TOTAL_COLS  # = 10 (col J)
 
 COLUMN_WIDTHS: dict[str, float] = {
-    "A": 11.0,   # Date
-    "B": 12.0,   # Hours Worked
-    "C": 11.0, "D": 11.0, "E": 11.0,
-    "F": 13.0,   # Total Tip Out
-    "G": 11.0, "H": 11.0,
-    "I": 12.0,   # Net Tip
-    "J": 9.0,    # $/hr
+    "A": 11.0,  # Date
+    "B": 12.0,  # Hours Worked
+    "C": 11.0,
+    "D": 11.0,
+    "E": 11.0,
+    "F": 13.0,  # Total Tip Out
+    "G": 11.0,
+    "H": 11.0,
+    "I": 12.0,  # Net Tip
+    "J": 9.0,  # $/hr
 }
 
 THIN = Side(style="thin", color="B0B0B0")
@@ -89,8 +92,7 @@ def build_grid(
     in_period = [
         r
         for r in shift_rows
-        if r.canonical_name == canonical
-        and period.start <= r.date <= period.end
+        if r.canonical_name == canonical and period.start <= r.date <= period.end
     ]
 
     # Sum by date — same-day duplicate rows are rare but safe to fold.
@@ -112,11 +114,7 @@ def build_grid(
     row1: list[Any] = [None] * TOTAL_COLS
     row1[0] = title
 
-    row2: list[Any] = (
-        ["Date", HOURS_HEADER]
-        + [label for label, _ in TIP_COLUMNS]
-        + [PER_HR_HEADER]
-    )
+    row2: list[Any] = ["Date", HOURS_HEADER] + [label for label, _ in TIP_COLUMNS] + [PER_HR_HEADER]
 
     grid: list[list[Any]] = [row1, row2]
 
@@ -163,8 +161,10 @@ def _apply_styling(ws, totals_row: int) -> None:
     # Title
     ws.cell(row=TITLE_ROW, column=1).font = Font(name="Calibri", size=14, bold=True)
     ws.merge_cells(
-        start_row=TITLE_ROW, start_column=1,
-        end_row=TITLE_ROW, end_column=TOTAL_COLS,
+        start_row=TITLE_ROW,
+        start_column=1,
+        end_row=TITLE_ROW,
+        end_column=TOTAL_COLS,
     )
 
     # Header row: bold, gray fill, centered.
@@ -205,7 +205,10 @@ def _apply_styling(ws, totals_row: int) -> None:
             if r == totals_row - 1:
                 bottom = MEDIUM
             ws.cell(row=r, column=c).border = Border(
-                left=THIN, right=THIN, top=top, bottom=bottom,
+                left=THIN,
+                right=THIN,
+                top=top,
+                bottom=bottom,
             )
 
 
@@ -234,9 +237,7 @@ def append_period_tab_for_employee(
 
     tab = _tab_name(period)
     if tab in wb.sheetnames:
-        raise ValueError(
-            f"Tab {tab!r} already exists in {file_path.name} — delete to re-run"
-        )
+        raise ValueError(f"Tab {tab!r} already exists in {file_path.name} — delete to re-run")
 
     ws = wb.create_sheet(tab)
     grid = build_grid(period, canonical, shift_rows, hours_by_date=hours_by_date)

@@ -4,7 +4,14 @@ from click.testing import CliRunner
 from openpyxl import Workbook
 
 
-def _write_roster(path, employees, aliases, *, emp_header="Canonical Name", alias_headers=("Raw Name", "Canonical Name")):
+def _write_roster(
+    path,
+    employees,
+    aliases,
+    *,
+    emp_header="Canonical Name",
+    alias_headers=("Raw Name", "Canonical Name"),
+):
     wb = Workbook()
     emp = wb.active
     emp.title = "Employees"

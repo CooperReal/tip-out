@@ -120,8 +120,11 @@ def run(
     if unknown:
         raise UnresolvedNames(unknown)
 
-    dangling = [r.canonical_name for r in shift_rows
-                if r.canonical_name is not None and r.canonical_name not in roster.employees]
+    dangling = [
+        r.canonical_name
+        for r in shift_rows
+        if r.canonical_name is not None and r.canonical_name not in roster.employees
+    ]
     if dangling:
         raise DanglingAlias(dangling)
 
@@ -135,7 +138,10 @@ def run(
         hours_by_canonical = _aggregate_hours(roster, hours_path, period)
 
     append_period_tab(
-        config.summary_path, period, shift_rows, roster,
+        config.summary_path,
+        period,
+        shift_rows,
+        roster,
         restaurant_name=_DISPLAY[restaurant],
     )
 
@@ -143,9 +149,7 @@ def run(
         return  # summary only
 
     output_dir = config.summary_path.parent
-    canonicals_with_shifts = sorted(
-        {r.canonical_name for r in shift_rows if r.canonical_name}
-    )
+    canonicals_with_shifts = sorted({r.canonical_name for r in shift_rows if r.canonical_name})
     for canon in canonicals_with_shifts:
         append_period_tab_for_employee(
             output_dir,

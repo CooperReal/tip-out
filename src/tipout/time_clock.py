@@ -21,9 +21,9 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class HoursRow:
-    raw_name: str   # title-cased from the CSV's uppercase
-    date: date      # from Start Date; midnight-crossing shifts attribute here
-    hours: float    # from the Duration (Hours) column
+    raw_name: str  # title-cased from the CSV's uppercase
+    date: date  # from Start Date; midnight-crossing shifts attribute here
+    hours: float  # from the Duration (Hours) column
 
 
 # Last column index in a shift row: Start Date, Start Time, End Date, End Time,

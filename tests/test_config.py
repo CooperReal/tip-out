@@ -20,9 +20,7 @@ def test_load_tiny_config():
 def test_load_rejects_string_anchor_date(tmp_path):
     bad = tmp_path / "bad.yaml"
     bad.write_text(
-        'anchor_date: "2025-12-29"\n'
-        "roster_path: roster.xlsx\n"
-        "summary_path: summary.xlsx\n",
+        'anchor_date: "2025-12-29"\nroster_path: roster.xlsx\nsummary_path: summary.xlsx\n',
         encoding="utf-8",
     )
     with pytest.raises(TypeError):

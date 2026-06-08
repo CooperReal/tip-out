@@ -22,6 +22,7 @@ def test_parses_single_day_block():
 def test_schema_drift_raises(tmp_path):
     from openpyxl import Workbook
     from datetime import date as _date
+
     wb = Workbook()
     ws = wb.active
     ws.title = "test week"

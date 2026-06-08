@@ -82,10 +82,7 @@ def guess_mapping(raw: str, roster: Roster) -> Decision:
 
     first_token = base.split()[0] if base else ""
     if first_token:
-        first_matches = [
-            c for c in roster.employees
-            if c.split()[0].lower() == first_token
-        ]
+        first_matches = [c for c in roster.employees if c.split()[0].lower() == first_token]
         if len(first_matches) == 1:
             return Decision("alias", first_matches[0])
 
@@ -101,9 +98,7 @@ def apply_decisions(decisions: dict[str, Decision]) -> None:
     emp_ws = wb["Employees"]
     alias_ws = wb["Name Aliases"]
     existing_emps = {
-        row[0].strip()
-        for row in emp_ws.iter_rows(min_row=2, values_only=True)
-        if row and row[0]
+        row[0].strip() for row in emp_ws.iter_rows(min_row=2, values_only=True) if row and row[0]
     }
     existing_alias_raws = {
         row[0].strip().lower()

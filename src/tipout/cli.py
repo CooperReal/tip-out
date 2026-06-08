@@ -57,7 +57,11 @@ def run(period_str, pos_path, config_path, hours_path, restaurant):
     from tipout.config import Config
     from tipout.period import PayPeriod
     from tipout.runner import (
-        run as _run, UnresolvedNames, UnresolvedHoursNames, DanglingAlias, L56Mismatch,
+        run as _run,
+        UnresolvedNames,
+        UnresolvedHoursNames,
+        DanglingAlias,
+        L56Mismatch,
     )
     from tipout.wvm_parser import WvmFormatError
 
@@ -143,7 +147,9 @@ def run(period_str, pos_path, config_path, hours_path, restaurant):
     default="2025-12-29",
     help="Pay-period anchor date (a Monday that starts a known period). Default: 2025-12-29.",
 )
-@click.option("--force", is_flag=True, default=False, help="Overwrite existing config.yaml / roster.xlsx.")
+@click.option(
+    "--force", is_flag=True, default=False, help="Overwrite existing config.yaml / roster.xlsx."
+)
 def init(project_dir, summary_path, anchor, force):
     """Scaffold a fresh tipout project (config.yaml, roster.xlsx, output/)."""
     from tipout.bootstrap import RosterSnapshot, extract_roster_from_summary, write_roster
@@ -157,7 +163,9 @@ def init(project_dir, summary_path, anchor, force):
     existing = [p for p in (config_path, roster_path) if p.exists()]
     if existing and not force:
         names = ", ".join(p.name for p in existing)
-        raise click.ClickException(f"{names} already exists in {project_dir}. Pass --force to overwrite.")
+        raise click.ClickException(
+            f"{names} already exists in {project_dir}. Pass --force to overwrite."
+        )
 
     config_path.write_text(
         f"# Tipout configuration. anchor_date must be a Monday that starts a known pay period.\n"
@@ -205,7 +213,9 @@ def init(project_dir, summary_path, anchor, force):
 def bootstrap_roster_cmd(summary_path, wvm_path, out_path, force):
     """Seed a roster.xlsx from an existing summary OR a WVM daily worksheet."""
     from tipout.bootstrap import (
-        extract_roster_from_summary, extract_roster_from_wvm_daily, write_roster,
+        extract_roster_from_summary,
+        extract_roster_from_wvm_daily,
+        write_roster,
     )
 
     if bool(summary_path) == bool(wvm_path):

@@ -17,8 +17,14 @@ from tipout.pos_parser import ShiftRow
 
 def _shift(d: date, canon: str | None, **vals) -> ShiftRow:
     base = dict(
-        cc_tips=0.0, party=0.0, sa_tip_out=0.0, bar_tipout=0.0,
-        total_tip_out=0.0, barback=0.0, bartender=0.0, net_tip=0.0,
+        cc_tips=0.0,
+        party=0.0,
+        sa_tip_out=0.0,
+        bar_tipout=0.0,
+        total_tip_out=0.0,
+        barback=0.0,
+        bartender=0.0,
+        net_tip=0.0,
         is_party=False,
     )
     base.update(vals)
@@ -34,14 +40,23 @@ def test_build_grid_layout_and_totals():
     period = PayPeriod.from_dates(date(2025, 12, 29), date(2026, 1, 11))
     rows = [
         _shift(
-            date(2025, 12, 30), "Yvonne Lewis",
-            cc_tips=231.0, sa_tip_out=10.53, bar_tipout=33.90,
-            total_tip_out=44.43, bartender=105.80, net_tip=292.37,
+            date(2025, 12, 30),
+            "Yvonne Lewis",
+            cc_tips=231.0,
+            sa_tip_out=10.53,
+            bar_tipout=33.90,
+            total_tip_out=44.43,
+            bartender=105.80,
+            net_tip=292.37,
         ),
         _shift(
-            date(2025, 12, 31), "Yvonne Lewis",
-            cc_tips=280.57, sa_tip_out=13.38, total_tip_out=13.38,
-            bartender=72.82, net_tip=340.01,
+            date(2025, 12, 31),
+            "Yvonne Lewis",
+            cc_tips=280.57,
+            sa_tip_out=13.38,
+            total_tip_out=13.38,
+            bartender=72.82,
+            net_tip=340.01,
         ),
     ]
 
@@ -53,8 +68,16 @@ def test_build_grid_layout_and_totals():
 
     # Header row.
     assert grid[1] == [
-        "Date", "Hours Worked", "CC Tips", "SA Tip Out", "Bar Tipout",
-        "Total Tip Out", "Barback", "Bartender", "Net Tip", "$/hr",
+        "Date",
+        "Hours Worked",
+        "CC Tips",
+        "SA Tip Out",
+        "Bar Tipout",
+        "Total Tip Out",
+        "Barback",
+        "Bartender",
+        "Net Tip",
+        "$/hr",
     ]
 
     # 2 header rows + 14 day rows + 1 totals row = 17 rows.
@@ -68,23 +91,23 @@ def test_build_grid_layout_and_totals():
     # Day 2 = 12/30 = first shift. CC Tips is now col index 2 (B is Hours).
     day2 = grid[3]
     assert day2[0] == date(2025, 12, 30)
-    assert day2[1] is None       # Hours Worked (not provided)
-    assert day2[2] == 231.0      # CC Tips
-    assert day2[3] == 10.53      # SA Tip Out
-    assert day2[4] == 33.90      # Bar Tipout
-    assert day2[5] == 44.43      # Total Tip Out
-    assert day2[6] is None       # Barback (zero)
-    assert day2[7] == 105.80     # Bartender
-    assert day2[8] == 292.37     # Net Tip
-    assert day2[9] is None       # $/hr (day rows always blank)
+    assert day2[1] is None  # Hours Worked (not provided)
+    assert day2[2] == 231.0  # CC Tips
+    assert day2[3] == 10.53  # SA Tip Out
+    assert day2[4] == 33.90  # Bar Tipout
+    assert day2[5] == 44.43  # Total Tip Out
+    assert day2[6] is None  # Barback (zero)
+    assert day2[7] == 105.80  # Bartender
+    assert day2[8] == 292.37  # Net Tip
+    assert day2[9] is None  # $/hr (day rows always blank)
 
     # Totals row.
     totals = grid[-1]
     assert totals[0] == "Total"
-    assert totals[1] is None     # Hours total — none provided
-    assert totals[2] == 511.57   # CC Tips total
-    assert totals[8] == 632.38   # Net Tip total
-    assert totals[9] is None     # $/hr blank when hours total is 0
+    assert totals[1] is None  # Hours total — none provided
+    assert totals[2] == 511.57  # CC Tips total
+    assert totals[8] == 632.38  # Net Tip total
+    assert totals[9] is None  # $/hr blank when hours total is 0
 
 
 def test_build_grid_omits_other_employees():
@@ -96,7 +119,7 @@ def test_build_grid_omits_other_employees():
     ]
 
     grid = build_grid(period, "Yvonne Lewis", rows)
-    assert grid[-1][8] == 100.0   # totals: only Yvonne counted
+    assert grid[-1][8] == 100.0  # totals: only Yvonne counted
 
 
 def test_build_grid_excludes_out_of_period():
@@ -114,8 +137,10 @@ def test_append_period_tab_writes_file_with_styling(tmp_path):
     period = PayPeriod.from_dates(date(2025, 12, 29), date(2026, 1, 11))
     rows = [
         _shift(
-            date(2025, 12, 30), "Yvonne Lewis",
-            cc_tips=231.0, net_tip=292.37,
+            date(2025, 12, 30),
+            "Yvonne Lewis",
+            cc_tips=231.0,
+            net_tip=292.37,
         ),
     ]
 
@@ -182,7 +207,7 @@ def test_append_period_tab_rejects_duplicate_period(tmp_path):
 
 def test_safe_filename_strips_illegal_chars():
     assert _safe_filename("Anthony Garcia") == "Anthony Garcia"
-    assert _safe_filename('Bad/Name?') == "Bad_Name_"
+    assert _safe_filename("Bad/Name?") == "Bad_Name_"
     assert _safe_filename("Marcus, Eric") == "Marcus, Eric"  # comma is legal
 
 
@@ -212,7 +237,7 @@ def test_build_grid_with_hours_populates_b_and_j():
 
     # Totals row.
     totals = grid[-1]
-    assert totals[1] == 16.5    # hours total
+    assert totals[1] == 16.5  # hours total
     # $/hr = Net Tip total (500.0) / Hours total (16.5) → 30.30
     assert totals[9] == round(500.0 / 16.5, 2)
 
@@ -222,8 +247,8 @@ def test_build_grid_with_zero_hours_total_leaves_per_hr_blank():
     rows = [_shift(date(2025, 12, 30), "Yvonne Lewis", net_tip=50.0)]
     grid = build_grid(period, "Yvonne Lewis", rows, hours_by_date={})
     totals = grid[-1]
-    assert totals[1] is None    # no hours
-    assert totals[9] is None    # $/hr left blank, not zero
+    assert totals[1] is None  # no hours
+    assert totals[9] is None  # $/hr left blank, not zero
 
 
 def test_hours_column_uses_plain_number_not_currency_format(tmp_path):
@@ -244,8 +269,8 @@ def test_hours_column_uses_plain_number_not_currency_format(tmp_path):
     # Hours column (B) is a plain number on day rows AND the totals row.
     for r in range(3, 18):  # rows 3..17 = 14 day rows + totals
         assert ws.cell(row=r, column=2).number_format == HOURS_FORMAT
-    assert ws.cell(row=4, column=2).value == 7.55       # value unchanged
-    assert ws.cell(row=17, column=2).value == 14.15     # hours total
+    assert ws.cell(row=4, column=2).value == 7.55  # value unchanged
+    assert ws.cell(row=17, column=2).value == 14.15  # hours total
 
     # Tip columns (C..I) keep currency on day rows and the totals row.
     for c in range(3, 10):
