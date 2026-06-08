@@ -13,6 +13,8 @@ dependencies = [
 dev = [
     "pytest>=7.4",
     "pytest-cov>=4.1",
+    "ruff==0.15.16",
+    "mypy>=2.1,<2.2",
 ]
 
 [project.scripts]
@@ -24,3 +26,29 @@ build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+# ruff format honors the line-length above; no [tool.ruff.format] section needed.
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "T10", "T20"]
+
+[tool.ruff.lint.per-file-ignores]
+# T20 (no print) enforced only in the shipped library; these legitimately print.
+"tests/**" = ["T20"]
+"run_all.py" = ["T20"]
+"scripts/**" = ["T20"]
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = ["src", "scripts"]
+explicit_package_bases = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+# Lenient: no disallow_untyped_defs. Catches real errors where types exist.
+
+[[tool.mypy.overrides]]
+module = ["openpyxl.*", "yaml"]
+ignore_missing_imports = true
