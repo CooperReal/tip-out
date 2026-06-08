@@ -87,8 +87,8 @@ def test_extract_roster_skips_blank_canonical(tmp_path):
                 "12.29 to 01.11.2026",
                 [
                     ("Anthony Garcia", "Anthony"),
-                    (None, "GhostName"),         # unresolved row -> skip
-                    ("", "AnotherGhost"),        # also skip
+                    (None, "GhostName"),  # unresolved row -> skip
+                    ("", "AnotherGhost"),  # also skip
                     ("Jake Purvis", "Jake"),
                 ],
             )

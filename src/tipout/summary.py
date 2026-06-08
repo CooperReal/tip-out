@@ -16,18 +16,30 @@ DATE_FORMAT = "ddd m/d"  # e.g. "Mon 12/29" — easier to scan than mm-dd-yy
 # Layout: col A = name, cols B..O = days 1..14, col P = total. No spacer columns.
 COLUMN_WIDTHS: dict[str, float] = {
     "A": 26.0,
-    "B": 10.5, "C": 10.5, "D": 10.5, "E": 10.5, "F": 10.5, "G": 10.5, "H": 10.5,
-    "I": 10.5, "J": 10.5, "K": 10.5, "L": 10.5, "M": 10.5, "N": 10.5, "O": 10.5,
+    "B": 10.5,
+    "C": 10.5,
+    "D": 10.5,
+    "E": 10.5,
+    "F": 10.5,
+    "G": 10.5,
+    "H": 10.5,
+    "I": 10.5,
+    "J": 10.5,
+    "K": 10.5,
+    "L": 10.5,
+    "M": 10.5,
+    "N": 10.5,
+    "O": 10.5,
     "P": 12.0,
 }
 
-NAME_COL = 1            # A
-FIRST_DAY_COL = 2       # B (day 1); day N at FIRST_DAY_COL + (N - 1)
-TOTAL_COL = 16          # P
+NAME_COL = 1  # A
+FIRST_DAY_COL = 2  # B (day 1); day N at FIRST_DAY_COL + (N - 1)
+TOTAL_COL = 16  # P
 WEEK_DIVIDER_BEFORE_COL = FIRST_DAY_COL + 7  # I — left border of day 8 = week divider
 
 TITLE_ROW = 1
-DATE_ROW = 2            # was 3 in old layout; tightened
+DATE_ROW = 2  # was 3 in old layout; tightened
 FIRST_EMPLOYEE_ROW = 3  # was 5
 
 THIN = Side(style="thin", color="B0B0B0")
@@ -51,17 +63,14 @@ def build_grid(
     canonical with at least one in-period shift, in roster insertion order),
     row N+1 totals row. Columns: A name, B..O day 1..14, P grand total.
     """
-    in_period = [
-        r
-        for r in shift_rows
-        if period.start <= r.date <= period.end and r.canonical_name
-    ]
+    in_period = [r for r in shift_rows if period.start <= r.date <= period.end and r.canonical_name]
 
     by_emp_date: dict[str, dict[date, float]] = defaultdict(dict)
     for r in in_period:
-        by_emp_date[r.canonical_name][r.date] = (
-            by_emp_date[r.canonical_name].get(r.date, 0.0) + r.net_tip
-        )
+        canon = r.canonical_name
+        if canon is None:  # unreachable: the in_period filter guarantees a canonical
+            continue
+        by_emp_date[canon][r.date] = by_emp_date[canon].get(r.date, 0.0) + r.net_tip
 
     dates_in_period = [period.start + timedelta(days=i) for i in range(14)]
     title = (
@@ -157,8 +166,10 @@ def _apply_styling(ws, num_employee_rows: int) -> None:
     title_cell = ws.cell(row=TITLE_ROW, column=NAME_COL)
     title_cell.font = Font(name="Calibri", size=14, bold=True)
     ws.merge_cells(
-        start_row=TITLE_ROW, start_column=NAME_COL,
-        end_row=TITLE_ROW, end_column=TOTAL_COL,
+        start_row=TITLE_ROW,
+        start_column=NAME_COL,
+        end_row=TITLE_ROW,
+        end_column=TOTAL_COL,
     )
 
     totals_row = FIRST_EMPLOYEE_ROW + num_employee_rows

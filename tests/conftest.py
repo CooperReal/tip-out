@@ -94,11 +94,13 @@ def tiny_runner_env(tmp_path):
     hours_csv = tmp_path / "time_clock.csv"
     hours_csv.write_text(
         "ANTHONY GARCIA - WAIT Mon 12-29-2025 - Sun 01-04-2026,,,,,,,\n"
-        "Start Date,Start Time,End Date,End Time,Reported Tips,Regular Hours,Overtime Hours,Duration (Hours)\n"
+        "Start Date,Start Time,End Date,End Time,Reported Tips,"
+        "Regular Hours,Overtime Hours,Duration (Hours)\n"
         '"Mon, 12-29-25",3:00 PM,"Mon, 12-29-25",10:30 PM,0,6.0,0,6.0\n'
         "Total,,,,0,6.0,0,6.0\n"
         "JAKE PURVIS - BARTENDER Mon 12-29-2025 - Sun 01-04-2026,,,,,,,\n"
-        "Start Date,Start Time,End Date,End Time,Reported Tips,Regular Hours,Overtime Hours,Duration (Hours)\n"
+        "Start Date,Start Time,End Date,End Time,Reported Tips,"
+        "Regular Hours,Overtime Hours,Duration (Hours)\n"
         '"Mon, 12-29-25",4:00 PM,"Mon, 12-29-25",11:00 PM,0,7.0,0,7.0\n'
         "Total,,,,0,7.0,0,7.0\n",
         encoding="utf-8",
@@ -127,9 +129,18 @@ def tiny_wvm_runner_env(tmp_path):
         ws["A1"] = "WATERSOUND VILLAGE MARKET"
         ws["A3"] = "Date"
         ws["B3"] = d
-        labels = ["AM CC Tips", "PM CC TIPS", "AM STAFF TIP OUT", "PM STAFF TIP OUT",
-                  "AM Bar Tipout", "PM BAR TIPOUT", "TotalTip Out", "Serv As",
-                  "Bartender", "Net tip"]
+        labels = [
+            "AM CC Tips",
+            "PM CC TIPS",
+            "AM STAFF TIP OUT",
+            "PM STAFF TIP OUT",
+            "AM Bar Tipout",
+            "PM BAR TIPOUT",
+            "TotalTip Out",
+            "Serv As",
+            "Bartender",
+            "Net tip",
+        ]
         for i, label in enumerate(labels, start=3):
             ws.cell(row=4, column=i, value=label)
         r = 5
@@ -147,13 +158,23 @@ def tiny_wvm_runner_env(tmp_path):
 
     wb = Workbook()
     del wb["Sheet"]
-    _day(wb, "12.29.25", _date(2025, 12, 29), [
-        ("WAIT AM", "Ornella", 162.28),
-        ("WAIT AM", "Dwayne", 424.28),
-    ])
-    _day(wb, "12.30.25", _date(2025, 12, 30), [
-        ("WAIT AM", "Ornella", 100.00),
-    ])
+    _day(
+        wb,
+        "12.29.25",
+        _date(2025, 12, 29),
+        [
+            ("WAIT AM", "Ornella", 162.28),
+            ("WAIT AM", "Dwayne", 424.28),
+        ],
+    )
+    _day(
+        wb,
+        "12.30.25",
+        _date(2025, 12, 30),
+        [
+            ("WAIT AM", "Ornella", 100.00),
+        ],
+    )
     pos_path = tmp_path / "wvm.xlsx"
     wb.save(pos_path)
 
@@ -173,11 +194,13 @@ def tiny_wvm_runner_env(tmp_path):
     summary_path = tmp_path / "summary.xlsx"
     config_path = tmp_path / "config.yaml"
     config_path.write_text(
-        yaml.safe_dump({
-            "anchor_date": _date(2025, 12, 29),
-            "roster_path": str(roster_path),
-            "summary_path": str(summary_path),
-        }),
+        yaml.safe_dump(
+            {
+                "anchor_date": _date(2025, 12, 29),
+                "roster_path": str(roster_path),
+                "summary_path": str(summary_path),
+            }
+        ),
         encoding="utf-8",
     )
     return {

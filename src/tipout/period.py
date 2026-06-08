@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import date, timedelta
 
+
 @dataclass(frozen=True)
 class PayPeriod:
     start: date

@@ -1,11 +1,12 @@
-from datetime import date, date as _date
+from datetime import date
+from datetime import date as _date
 
 import pytest
 from openpyxl import Workbook, load_workbook
 
 from tipout.period import PayPeriod
 from tipout.pos_parser import ShiftRow
-from tipout.roster import Employee, load_roster, Roster
+from tipout.roster import Employee, Roster, load_roster
 from tipout.summary import (
     DATE_FORMAT,
     TIP_FORMAT,
@@ -61,10 +62,10 @@ def test_build_grid_basic(tiny_roster):
     # Anthony (grid index 2 = Excel row 3).
     anthony = grid[2]
     assert anthony[0] == "Anthony Garcia"
-    assert anthony[1] == 100.00       # day 1
-    assert anthony[2] is None         # day 2
-    assert anthony[3] == 200.00       # day 3
-    assert anthony[15] == 300.00      # total
+    assert anthony[1] == 100.00  # day 1
+    assert anthony[2] is None  # day 2
+    assert anthony[3] == 200.00  # day 3
+    assert anthony[15] == 300.00  # total
 
     # Jake (grid index 3).
     jake = grid[3]
@@ -186,9 +187,9 @@ def test_append_period_tab_applies_formats_and_borders(tmp_path, tiny_roster):
     ws = wb["12.29 to 01.11.2026"]
 
     # Number formats.
-    assert ws.cell(row=2, column=2).number_format == DATE_FORMAT     # day header
-    assert ws.cell(row=3, column=2).number_format == TIP_FORMAT      # day cell
-    assert ws.cell(row=3, column=16).number_format == TIP_FORMAT     # total
+    assert ws.cell(row=2, column=2).number_format == DATE_FORMAT  # day header
+    assert ws.cell(row=3, column=2).number_format == TIP_FORMAT  # day cell
+    assert ws.cell(row=3, column=16).number_format == TIP_FORMAT  # total
     # Frozen pane locks col A + the title/header rows.
     assert ws.freeze_panes == "B3"
     # Tightened col widths.
@@ -225,9 +226,9 @@ def test_append_period_tab_writes_totals_row(tmp_path, tiny_roster):
     # 2 header rows + 3 employees + 1 totals = totals at row 6.
     totals_row = 2 + 3 + 1  # = 6
     assert ws.cell(row=totals_row, column=1).value == "Daily Total"
-    assert ws.cell(row=totals_row, column=2).value == 125.00     # day 1
-    assert ws.cell(row=totals_row, column=3).value == 75.00      # day 2
-    assert ws.cell(row=totals_row, column=16).value == 200.00    # grand total
+    assert ws.cell(row=totals_row, column=2).value == 125.00  # day 1
+    assert ws.cell(row=totals_row, column=3).value == 75.00  # day 2
+    assert ws.cell(row=totals_row, column=16).value == 200.00  # grand total
     assert ws.cell(row=totals_row, column=16).font.bold is True
 
 
@@ -277,9 +278,17 @@ def _one_roster():
 
 def _one_row():
     r = ShiftRow(
-        date=_date(2025, 12, 29), raw_name="Jane",
-        cc_tips=0.0, party=0.0, sa_tip_out=0.0, bar_tipout=0.0,
-        total_tip_out=0.0, barback=0.0, bartender=0.0, net_tip=100.0, is_party=False,
+        date=_date(2025, 12, 29),
+        raw_name="Jane",
+        cc_tips=0.0,
+        party=0.0,
+        sa_tip_out=0.0,
+        bar_tipout=0.0,
+        total_tip_out=0.0,
+        barback=0.0,
+        bartender=0.0,
+        net_tip=100.0,
+        is_party=False,
     )
     r.canonical_name = "Jane Smith"
     return r
@@ -287,8 +296,9 @@ def _one_row():
 
 def test_build_grid_title_uses_restaurant_name():
     period = PayPeriod.from_dates(_date(2025, 12, 29), _date(2026, 1, 11))
-    grid = build_grid(period, [_one_row()], _one_roster(),
-                      restaurant_name="Watersound Village Market")
+    grid = build_grid(
+        period, [_one_row()], _one_roster(), restaurant_name="Watersound Village Market"
+    )
     assert grid[0][0].startswith("Watersound Village Market Tip outs")
 
 

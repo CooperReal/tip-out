@@ -5,13 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from openpyxl import load_workbook, Workbook
+from openpyxl import Workbook, load_workbook
 
 
 @dataclass
 class RosterSnapshot:
-    employees: dict[str, str]     # canonical -> role ("" if unknown)
-    aliases: dict[str, str]       # raw -> canonical
+    employees: dict[str, str]  # canonical -> role ("" if unknown)
+    aliases: dict[str, str]  # raw -> canonical
 
 
 def extract_roster_from_summary(summary_path: Path) -> RosterSnapshot:

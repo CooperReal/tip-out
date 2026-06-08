@@ -1,10 +1,15 @@
-from datetime import date
-
 from click.testing import CliRunner
 from openpyxl import Workbook
 
 
-def _write_roster(path, employees, aliases, *, emp_header="Canonical Name", alias_headers=("Raw Name", "Canonical Name")):
+def _write_roster(
+    path,
+    employees,
+    aliases,
+    *,
+    emp_header="Canonical Name",
+    alias_headers=("Raw Name", "Canonical Name"),
+):
     wb = Workbook()
     emp = wb.active
     emp.title = "Employees"
@@ -41,6 +46,7 @@ def test_missing_file_is_error(tmp_path):
 
 def test_missing_employees_sheet(tmp_path):
     from openpyxl import Workbook
+
     from tipout.validator import validate_roster
 
     path = tmp_path / "roster.xlsx"
@@ -96,6 +102,7 @@ def test_first_name_collision_is_warning(tmp_path):
 
 def test_blank_canonical_is_error(tmp_path):
     from openpyxl import Workbook
+
     from tipout.validator import validate_roster
 
     path = tmp_path / "roster.xlsx"

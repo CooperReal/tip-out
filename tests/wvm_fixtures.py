@@ -10,13 +10,13 @@ junk).
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import datetime
 
 from openpyxl import Workbook
 
 HEADERS = {
-    3: "AM CC Tips",       # col C
-    4: "PM CC TIPS",       # col D
+    3: "AM CC Tips",  # col C
+    4: "PM CC TIPS",  # col D
     5: "AM STAFF TIP OUT",
     6: "PM STAFF TIP OUT",
     7: "AM Bar Tipout",
@@ -24,7 +24,7 @@ HEADERS = {
     9: "TotalTip Out",
     10: "Serv As",
     11: "Bartender",
-    12: "Net tip",         # col L
+    12: "Net tip",  # col L
 }
 
 
@@ -67,45 +67,82 @@ def build_wvm_workbook(path) -> None:
     del wb["Sheet"]
 
     # Happy day: a worker in two groups (summed downstream), a zero row (skipped).
-    _new_day(wb, "12.29.25", datetime(2025, 12, 29), [
-        ("WAIT AM", "Ornella", 162.28),
-        ("WAIT AM", "Dwayne Graham", 424.28),
-        ("WAIT AM", "Heather", 0),          # zero row -> skipped by parser
-        ("BARTNDR", "Dwayne Graham", 50.0), # same person, second group
-    ], junk_far_col=True)
+    _new_day(
+        wb,
+        "12.29.25",
+        datetime(2025, 12, 29),
+        [
+            ("WAIT AM", "Ornella", 162.28),
+            ("WAIT AM", "Dwayne Graham", 424.28),
+            ("WAIT AM", "Heather", 0),  # zero row -> skipped by parser
+            ("BARTNDR", "Dwayne Graham", 50.0),  # same person, second group
+        ],
+        junk_far_col=True,
+    )
 
     # Stray empty sheet, mid-list (not trailing).
     wb.create_sheet("Sheet1")
 
     # Trailing-space tab name.
-    _new_day(wb, "12.30.25 ", datetime(2025, 12, 30), [
-        ("WAIT AM", "Ornella", 100.0),
-    ])
+    _new_day(
+        wb,
+        "12.30.25 ",
+        datetime(2025, 12, 30),
+        [
+            ("WAIT AM", "Ornella", 100.0),
+        ],
+    )
 
     # B3 stored as a typo'd string -> date recovered from tab name.
-    _new_day(wb, "01.05.2026", "1/5/226", [
-        ("WAIT AM", "Ornella", 80.0),
-    ])
+    _new_day(
+        wb,
+        "01.05.2026",
+        "1/5/226",
+        [
+            ("WAIT AM", "Ornella", 80.0),
+        ],
+    )
 
     # B3 a real date that DISAGREES with the tab name -> warn, use tab name.
-    _new_day(wb, "01.06.2026", datetime(2026, 1, 7), [
-        ("WAIT AM", "Ornella", 70.0),
-    ])
+    _new_day(
+        wb,
+        "01.06.2026",
+        datetime(2026, 1, 7),
+        [
+            ("WAIT AM", "Ornella", 70.0),
+        ],
+    )
 
     # Corrupted PM CC header -> Net tip (col L) still read.
-    _new_day(wb, "01.07.2026", datetime(2026, 1, 7), [
-        ("WAIT AM", "Ornella", 90.0),
-    ], corrupt_pm_cc=True)
+    _new_day(
+        wb,
+        "01.07.2026",
+        datetime(2026, 1, 7),
+        [
+            ("WAIT AM", "Ornella", 90.0),
+        ],
+        corrupt_pm_cc=True,
+    )
 
     # Negative net tip (correction) -> kept.
-    _new_day(wb, "01.08.2026", datetime(2026, 1, 8), [
-        ("WAIT AM", "Carlos", -7.83),
-    ])
+    _new_day(
+        wb,
+        "01.08.2026",
+        datetime(2026, 1, 8),
+        [
+            ("WAIT AM", "Carlos", -7.83),
+        ],
+    )
 
     # Junk col-A group label -> must not become a role for the harvester.
-    _new_day(wb, "01.09.2026", datetime(2026, 1, 9), [
-        ("F Runner", "Cole Sadler", 30.0),
-        ("10.19.2222025", "Cristian Cedeo", 25.0),
-    ])
+    _new_day(
+        wb,
+        "01.09.2026",
+        datetime(2026, 1, 9),
+        [
+            ("F Runner", "Cole Sadler", 30.0),
+            ("10.19.2222025", "Cristian Cedeo", 25.0),
+        ],
+    )
 
     wb.save(path)

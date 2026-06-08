@@ -83,14 +83,13 @@ def test_init_refuses_overwrite_without_force(tmp_path):
 
 
 def test_init_accepts_custom_anchor(tmp_path):
-    from tipout.cli import main
-    from tipout.config import Config
     from datetime import date
 
+    from tipout.cli import main
+    from tipout.config import Config
+
     runner = CliRunner()
-    result = runner.invoke(
-        main, ["init", "--dir", str(tmp_path), "--anchor", "2026-01-12"]
-    )
+    result = runner.invoke(main, ["init", "--dir", str(tmp_path), "--anchor", "2026-01-12"])
     assert result.exit_code == 0, result.output
     cfg = Config.load(tmp_path / "config.yaml")
     assert cfg.anchor_date == date(2026, 1, 12)

@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import re
 import sys
+from collections.abc import Iterator
 from datetime import date, datetime
 from pathlib import Path
-from typing import Iterator
 
 from openpyxl import load_workbook
 
@@ -141,18 +141,25 @@ def parse_workbook(path: Path) -> list[ShiftRow]:
         for name, net, _group in _iter_rows(ws, header_row, name_col, net_col):
             if net == 0.0:
                 continue
-            rows.append(ShiftRow(
-                date=the_date, raw_name=name,
-                cc_tips=0.0, party=0.0, sa_tip_out=0.0, bar_tipout=0.0,
-                total_tip_out=0.0, barback=0.0, bartender=0.0,
-                net_tip=net, is_party=False,
-            ))
+            rows.append(
+                ShiftRow(
+                    date=the_date,
+                    raw_name=name,
+                    cc_tips=0.0,
+                    party=0.0,
+                    sa_tip_out=0.0,
+                    bar_tipout=0.0,
+                    total_tip_out=0.0,
+                    barback=0.0,
+                    bartender=0.0,
+                    net_tip=net,
+                    is_party=False,
+                )
+            )
     if n_tabs == 0:
-        raise WvmFormatError(
-            f"{path}: no WVM day-tabs found — is this a WVM daily workbook?"
-        )
+        raise WvmFormatError(f"{path}: no WVM day-tabs found — is this a WVM daily workbook?")
     for w in warnings:
-        print(f"WARNING: {w}", file=sys.stderr)
+        sys.stderr.write(f"WARNING: {w}\n")
     return rows
 
 
