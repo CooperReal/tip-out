@@ -247,6 +247,35 @@ def test_cli_run_with_hours_flag(tiny_runner_env):
     assert ws.cell(row=17, column=2).value == 6.0  # Hours total
 
 
+def test_wvm_run_writes_summary_only(tiny_wvm_runner_env):
+    from tipout.runner import run
+    from tipout.config import Config
+    from tipout.period import PayPeriod
+
+    env = tiny_wvm_runner_env
+    cfg = Config.load(env["config_path"])
+    period = PayPeriod.from_dates(date(2025, 12, 29), date(2026, 1, 11))
+    run(cfg, env["pos_path"], period, restaurant="wvm")
+
+    wb = load_workbook(env["summary_path"])
+    ws = wb["12.29 to 01.11.2026"]
+    assert ws["A1"].value.startswith("Watersound Village Market Tip outs")
+    # no per-employee directory produced for wvm
+    assert not (env["summary_path"].parent / "per-employee").exists()
+
+
+def test_wvm_run_rejects_hours(tiny_wvm_runner_env):
+    from tipout.runner import run
+    from tipout.config import Config
+    from tipout.period import PayPeriod
+
+    env = tiny_wvm_runner_env
+    cfg = Config.load(env["config_path"])
+    period = PayPeriod.from_dates(date(2025, 12, 29), date(2026, 1, 11))
+    with pytest.raises(ValueError, match="hours"):
+        run(cfg, env["pos_path"], period, hours_path=env["pos_path"], restaurant="wvm")
+
+
 def test_cli_writes_unknown_hours_file_on_resolution_failure(tiny_runner_env, tmp_path):
     from tipout.cli import main
 
