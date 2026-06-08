@@ -50,3 +50,38 @@ def test_parse_keeps_only_net_tip_other_fields_zero(wvm_path):
     rows = parse_workbook(wvm_path)
     r = next(r for r in rows if r.raw_name == "Ornella" and r.date == date(2025, 12, 29))
     assert r.cc_tips == 0.0 and r.bar_tipout == 0.0 and r.is_party is False
+
+
+def test_string_b3_recovered_from_tab_name(wvm_path, capsys):
+    rows = parse_workbook(wvm_path)
+    assert any(r.date == date(2026, 1, 5) and r.raw_name == "Ornella" for r in rows)
+    assert "is not a date" in capsys.readouterr().err
+
+
+def test_b3_mismatch_uses_tab_name_and_warns(wvm_path, capsys):
+    rows = parse_workbook(wvm_path)
+    # tab 01.06.2026 has B3 = 2026-01-07; tab name must win.
+    assert any(r.date == date(2026, 1, 6) and r.raw_name == "Ornella" for r in rows)
+    assert "!= tab-name date" in capsys.readouterr().err
+
+
+def test_corrupted_pm_cc_header_still_reads_net(wvm_path):
+    rows = parse_workbook(wvm_path)
+    assert any(r.date == date(2026, 1, 7) and r.net_tip == 90.0 for r in rows)
+
+
+def test_negative_net_tip_is_kept(wvm_path):
+    rows = parse_workbook(wvm_path)
+    assert any(r.raw_name == "Carlos" and r.net_tip == -7.83 for r in rows)
+
+
+def test_trailing_space_tab_parsed(wvm_path):
+    rows = parse_workbook(wvm_path)
+    assert any(r.date == date(2025, 12, 30) for r in rows)
+
+
+def test_same_person_two_groups_yields_two_rows(wvm_path):
+    rows = parse_workbook(wvm_path)
+    dwayne = [r for r in rows if r.raw_name == "Dwayne Graham" and r.date == date(2025, 12, 29)]
+    assert len(dwayne) == 2
+    assert sorted(r.net_tip for r in dwayne) == [50.0, 424.28]
