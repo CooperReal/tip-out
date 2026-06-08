@@ -76,7 +76,8 @@ def validate_roster(path: Path) -> list[Issue]:
         issues.append(
             Issue(
                 "error",
-                f"Name Aliases sheet: headers must be {REQUIRED_ALIAS_HEADERS}, got ({header_a!r}, {header_b!r})",
+                f"Name Aliases sheet: headers must be {REQUIRED_ALIAS_HEADERS}, "
+                f"got ({header_a!r}, {header_b!r})",
             )
         )
 
@@ -99,7 +100,8 @@ def validate_roster(path: Path) -> list[Issue]:
             issues.append(
                 Issue(
                     "error",
-                    f"Name Aliases row {r}: {raw!r} -> {canon!r}, but {canon!r} is not in Employees",
+                    f"Name Aliases row {r}: {raw!r} -> {canon!r}, "
+                    f"but {canon!r} is not in Employees",
                 )
             )
         alias_raws.append(raw.strip())

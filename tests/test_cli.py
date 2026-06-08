@@ -1,5 +1,3 @@
-from datetime import date as _date
-
 from click.testing import CliRunner
 from openpyxl import load_workbook
 

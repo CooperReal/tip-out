@@ -57,11 +57,13 @@ def run(period_str, pos_path, config_path, hours_path, restaurant):
     from tipout.config import Config
     from tipout.period import PayPeriod
     from tipout.runner import (
-        run as _run,
-        UnresolvedNames,
-        UnresolvedHoursNames,
         DanglingAlias,
         L56Mismatch,
+        UnresolvedHoursNames,
+        UnresolvedNames,
+    )
+    from tipout.runner import (
+        run as _run,
     )
     from tipout.wvm_parser import WvmFormatError
 
@@ -88,7 +90,7 @@ def run(period_str, pos_path, config_path, hours_path, restaurant):
             "(pointing at an existing canonical). Then re-run.",
             err=True,
         )
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
     except UnresolvedHoursNames as exc:
         unknowns_path = config_path.parent / "unknown_hours_names.txt"
         unknowns_path.write_text("\n".join(exc.names) + "\n", encoding="utf-8")
@@ -103,14 +105,14 @@ def run(period_str, pos_path, config_path, hours_path, restaurant):
             "(pointing at an existing canonical). Then re-run.",
             err=True,
         )
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
     except DanglingAlias as exc:
         click.echo(
             f"Roster has alias(es) pointing at a name not in Employees: {exc.names}. "
             "Fix roster.xlsx (run 'check-roster') and re-run.",
             err=True,
         )
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
     except L56Mismatch as exc:
         click.echo(str(exc), err=True)
         click.echo(
@@ -118,10 +120,10 @@ def run(period_str, pos_path, config_path, hours_path, restaurant):
             "the file may be malformed for that day. No output written.",
             err=True,
         )
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
     except WvmFormatError as exc:
         click.echo(str(exc), err=True)
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
 
     click.echo(f"Done. Pay period {period.start} to {period.end}. Wrote {cfg.summary_path}.")
 

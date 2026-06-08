@@ -67,9 +67,10 @@ def build_grid(
 
     by_emp_date: dict[str, dict[date, float]] = defaultdict(dict)
     for r in in_period:
-        by_emp_date[r.canonical_name][r.date] = (
-            by_emp_date[r.canonical_name].get(r.date, 0.0) + r.net_tip
-        )
+        canon = r.canonical_name
+        if canon is None:  # unreachable: the in_period filter guarantees a canonical
+            continue
+        by_emp_date[canon][r.date] = by_emp_date[canon].get(r.date, 0.0) + r.net_tip
 
     dates_in_period = [period.start + timedelta(days=i) for i in range(14)]
     title = (

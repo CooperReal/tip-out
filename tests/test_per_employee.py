@@ -15,8 +15,8 @@ from tipout.period import PayPeriod
 from tipout.pos_parser import ShiftRow
 
 
-def _shift(d: date, canon: str | None, **vals) -> ShiftRow:
-    base = dict(
+def _shift(d: date, canon: str | None, **vals: float) -> ShiftRow:
+    base: dict[str, float] = dict(
         cc_tips=0.0,
         party=0.0,
         sa_tip_out=0.0,
@@ -25,13 +25,13 @@ def _shift(d: date, canon: str | None, **vals) -> ShiftRow:
         barback=0.0,
         bartender=0.0,
         net_tip=0.0,
-        is_party=False,
     )
     base.update(vals)
     return ShiftRow(
         date=d,
         raw_name=canon or "raw",
         canonical_name=canon,
+        is_party=False,
         **base,
     )
 

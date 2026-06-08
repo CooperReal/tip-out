@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from openpyxl import load_workbook, Workbook
+from openpyxl import Workbook, load_workbook
 
 
 @dataclass

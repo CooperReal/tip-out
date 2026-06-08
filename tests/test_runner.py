@@ -7,9 +7,9 @@ from openpyxl import Workbook, load_workbook
 
 
 def test_run_end_to_end(tiny_runner_env):
-    from tipout.runner import run
     from tipout.config import Config
     from tipout.period import PayPeriod
+    from tipout.runner import run
 
     env = tiny_runner_env
     cfg = Config.load(env["config_path"])
@@ -33,9 +33,9 @@ def test_run_end_to_end(tiny_runner_env):
 
 
 def test_run_raises_on_unknown_name(tiny_runner_env, tmp_path):
-    from tipout.runner import run, UnresolvedNames
     from tipout.config import Config
     from tipout.period import PayPeriod
+    from tipout.runner import UnresolvedNames, run
 
     env = tiny_runner_env
 
@@ -124,9 +124,9 @@ def test_cli_run_success(tiny_runner_env):
 
 
 def test_run_with_hours_populates_per_employee_files(tiny_runner_env):
-    from tipout.runner import run
     from tipout.config import Config
     from tipout.period import PayPeriod
+    from tipout.runner import run
 
     env = tiny_runner_env
     cfg = Config.load(env["config_path"])
@@ -146,9 +146,9 @@ def test_run_with_hours_populates_per_employee_files(tiny_runner_env):
 
 
 def test_run_without_hours_writes_blank_hours_columns(tiny_runner_env):
-    from tipout.runner import run
     from tipout.config import Config
     from tipout.period import PayPeriod
+    from tipout.runner import run
 
     env = tiny_runner_env
     cfg = Config.load(env["config_path"])
@@ -168,16 +168,17 @@ def test_run_without_hours_writes_blank_hours_columns(tiny_runner_env):
 
 
 def test_run_raises_unresolved_hours_names_before_writing_any_file(tiny_runner_env, tmp_path):
-    from tipout.runner import run, UnresolvedHoursNames
     from tipout.config import Config
     from tipout.period import PayPeriod
+    from tipout.runner import UnresolvedHoursNames, run
 
     env = tiny_runner_env
     # Hours CSV with a name (Stranger Person) that isn't in the roster.
     bad_csv = tmp_path / "bad_hours.csv"
     bad_csv.write_text(
         "STRANGER PERSON - WAIT Mon 12-29-2025 - Sun 01-04-2026,,,,,,,\n"
-        "Start Date,Start Time,End Date,End Time,Reported Tips,Regular Hours,Overtime Hours,Duration (Hours)\n"
+        "Start Date,Start Time,End Date,End Time,Reported Tips,"
+        "Regular Hours,Overtime Hours,Duration (Hours)\n"
         '"Mon, 12-29-25",3:00 PM,"Mon, 12-29-25",10:30 PM,0,5.0,0,5.0\n'
         "Total,,,,0,5.0,0,5.0\n",
         encoding="utf-8",
@@ -200,9 +201,9 @@ def test_run_raises_unresolved_hours_names_before_writing_any_file(tiny_runner_e
 
 def test_run_filters_hours_to_pay_period(tiny_runner_env, tmp_path):
     """Hours rows outside the requested period must not appear in per-employee tabs."""
-    from tipout.runner import run
     from tipout.config import Config
     from tipout.period import PayPeriod
+    from tipout.runner import run
 
     env = tiny_runner_env
 
@@ -210,7 +211,8 @@ def test_run_filters_hours_to_pay_period(tiny_runner_env, tmp_path):
     csv_path = tmp_path / "wider_hours.csv"
     csv_path.write_text(
         "ANTHONY GARCIA - WAIT Mon 12-29-2025 - Sun 01-25-2026,,,,,,,\n"
-        "Start Date,Start Time,End Date,End Time,Reported Tips,Regular Hours,Overtime Hours,Duration (Hours)\n"
+        "Start Date,Start Time,End Date,End Time,Reported Tips,"
+        "Regular Hours,Overtime Hours,Duration (Hours)\n"
         '"Mon, 12-29-25",3:00 PM,"Mon, 12-29-25",10:30 PM,0,6.0,0,6.0\n'
         '"Mon, 01-12-26",3:00 PM,"Mon, 01-12-26",10:30 PM,0,8.0,0,8.0\n'
         "Total,,,,0,14.0,0,14.0\n",
@@ -257,9 +259,9 @@ def test_cli_run_with_hours_flag(tiny_runner_env):
 
 
 def test_wvm_run_writes_summary_only(tiny_wvm_runner_env):
-    from tipout.runner import run
     from tipout.config import Config
     from tipout.period import PayPeriod
+    from tipout.runner import run
 
     env = tiny_wvm_runner_env
     cfg = Config.load(env["config_path"])
@@ -274,9 +276,9 @@ def test_wvm_run_writes_summary_only(tiny_wvm_runner_env):
 
 
 def test_wvm_run_rejects_hours(tiny_wvm_runner_env):
-    from tipout.runner import run
     from tipout.config import Config
     from tipout.period import PayPeriod
+    from tipout.runner import run
 
     env = tiny_wvm_runner_env
     cfg = Config.load(env["config_path"])
@@ -286,10 +288,9 @@ def test_wvm_run_rejects_hours(tiny_wvm_runner_env):
 
 
 def test_wvm_l56_check_passes_on_clean_env(tiny_wvm_runner_env):
-    from tipout.runner import run, DanglingAlias, L56Mismatch
     from tipout.config import Config
     from tipout.period import PayPeriod
-    from tipout.roster import load_roster
+    from tipout.runner import run
 
     env = tiny_wvm_runner_env
     cfg = Config.load(env["config_path"])
@@ -305,9 +306,9 @@ def test_wvm_l56_check_passes_on_clean_env(tiny_wvm_runner_env):
 
 
 def test_wvm_dangling_alias_raises(tiny_wvm_runner_env):
-    from tipout.runner import run, DanglingAlias
     from tipout.config import Config
     from tipout.period import PayPeriod
+    from tipout.runner import DanglingAlias, run
 
     env = tiny_wvm_runner_env
     # Point an alias at a canonical absent from Employees -> dangling.
@@ -329,7 +330,8 @@ def test_cli_writes_unknown_hours_file_on_resolution_failure(tiny_runner_env, tm
     bad_csv = tmp_path / "bad_hours.csv"
     bad_csv.write_text(
         "STRANGER PERSON - WAIT Mon 12-29-2025 - Sun 01-04-2026,,,,,,,\n"
-        "Start Date,Start Time,End Date,End Time,Reported Tips,Regular Hours,Overtime Hours,Duration (Hours)\n"
+        "Start Date,Start Time,End Date,End Time,Reported Tips,"
+        "Regular Hours,Overtime Hours,Duration (Hours)\n"
         '"Mon, 12-29-25",3:00 PM,"Mon, 12-29-25",10:30 PM,0,5.0,0,5.0\n'
         "Total,,,,0,5.0,0,5.0\n",
         encoding="utf-8",
@@ -357,9 +359,9 @@ def test_cli_writes_unknown_hours_file_on_resolution_failure(tiny_runner_env, tm
 
 def test_wvm_l56_mismatch_raises(tiny_wvm_runner_env):
     """Verify L56Mismatch is raised when totals-row Net tip disagrees with worker row sum."""
-    from tipout.runner import run, L56Mismatch
     from tipout.config import Config
     from tipout.period import PayPeriod
+    from tipout.runner import L56Mismatch, run
 
     env = tiny_wvm_runner_env
     # Load the workbook and corrupt the totals-row Net tip (row 7, column 12)

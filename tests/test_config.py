@@ -5,7 +5,6 @@ import pytest
 
 from tipout.config import Config
 
-
 FIXTURE = Path(__file__).parent / "fixtures" / "tiny_config.yaml"
 
 

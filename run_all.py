@@ -19,7 +19,8 @@ from openpyxl import load_workbook
 from tipout.config import Config
 from tipout.period import PayPeriod
 from tipout.roster import Roster, load_roster
-from tipout.runner import UnresolvedNames, run as tipout_run
+from tipout.runner import UnresolvedNames
+from tipout.runner import run as tipout_run
 from tipout.summary import _tab_name as period_tab_name
 
 ROOT = Path(__file__).parent
@@ -34,7 +35,8 @@ TOTAL_TIPS_COL = 16
 HAND_TOTAL_ROW_RANGE = range(55, 70)
 # Hand workbook has per-employee subtotals; grand total is the one > $1000.
 HAND_TOTAL_MIN = 1000
-# Each decision can create new canonicals that spawn more ambiguity; in practice converges in 1-2 passes.
+# Each decision can create new canonicals that spawn more ambiguity;
+# in practice converges in 1-2 passes.
 MAX_UNKNOWN_RETRIES = 5
 
 PERIODS = [

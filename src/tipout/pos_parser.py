@@ -84,7 +84,7 @@ def _find_day_blocks(ws) -> list[dict]:
     for header_row in range(1, max_r + 1):
         c = 1
         while c <= max_c:
-            headers = {}
+            headers: dict[str, int] = {}
             for offset in range(10):  # a day-block is 10 cols wide
                 v = ws.cell(row=header_row, column=c + offset).value
                 if isinstance(v, str):
@@ -141,7 +141,7 @@ def _parse_block(ws, block) -> list[ShiftRow]:
         if not isinstance(raw_name, str) or not raw_name.strip():
             continue
 
-        def g(label):
+        def g(label, r=r):
             col = block["headers"].get(label)
             if col is None:
                 return 0.0

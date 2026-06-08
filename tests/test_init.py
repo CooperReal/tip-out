@@ -83,9 +83,10 @@ def test_init_refuses_overwrite_without_force(tmp_path):
 
 
 def test_init_accepts_custom_anchor(tmp_path):
+    from datetime import date
+
     from tipout.cli import main
     from tipout.config import Config
-    from datetime import date
 
     runner = CliRunner()
     result = runner.invoke(main, ["init", "--dir", str(tmp_path), "--anchor", "2026-01-12"])

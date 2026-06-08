@@ -94,11 +94,13 @@ def tiny_runner_env(tmp_path):
     hours_csv = tmp_path / "time_clock.csv"
     hours_csv.write_text(
         "ANTHONY GARCIA - WAIT Mon 12-29-2025 - Sun 01-04-2026,,,,,,,\n"
-        "Start Date,Start Time,End Date,End Time,Reported Tips,Regular Hours,Overtime Hours,Duration (Hours)\n"
+        "Start Date,Start Time,End Date,End Time,Reported Tips,"
+        "Regular Hours,Overtime Hours,Duration (Hours)\n"
         '"Mon, 12-29-25",3:00 PM,"Mon, 12-29-25",10:30 PM,0,6.0,0,6.0\n'
         "Total,,,,0,6.0,0,6.0\n"
         "JAKE PURVIS - BARTENDER Mon 12-29-2025 - Sun 01-04-2026,,,,,,,\n"
-        "Start Date,Start Time,End Date,End Time,Reported Tips,Regular Hours,Overtime Hours,Duration (Hours)\n"
+        "Start Date,Start Time,End Date,End Time,Reported Tips,"
+        "Regular Hours,Overtime Hours,Duration (Hours)\n"
         '"Mon, 12-29-25",4:00 PM,"Mon, 12-29-25",11:00 PM,0,7.0,0,7.0\n'
         "Total,,,,0,7.0,0,7.0\n",
         encoding="utf-8",

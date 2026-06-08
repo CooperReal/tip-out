@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from tipout.pos_parser import parse_workbook, SchemaError
+from tipout.pos_parser import SchemaError, parse_workbook
 
 FIXTURE = Path(__file__).parent / "fixtures" / "tiny_pos.xlsx"
 
@@ -20,8 +20,9 @@ def test_parses_single_day_block():
 
 
 def test_schema_drift_raises(tmp_path):
-    from openpyxl import Workbook
     from datetime import date as _date
+
+    from openpyxl import Workbook
 
     wb = Workbook()
     ws = wb.active

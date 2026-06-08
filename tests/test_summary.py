@@ -1,11 +1,12 @@
-from datetime import date, date as _date
+from datetime import date
+from datetime import date as _date
 
 import pytest
 from openpyxl import Workbook, load_workbook
 
 from tipout.period import PayPeriod
 from tipout.pos_parser import ShiftRow
-from tipout.roster import Employee, load_roster, Roster
+from tipout.roster import Employee, Roster, load_roster
 from tipout.summary import (
     DATE_FORMAT,
     TIP_FORMAT,
