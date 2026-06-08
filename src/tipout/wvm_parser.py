@@ -95,23 +95,28 @@ def _name_col(headers: dict[str, int]) -> int:
 def _iter_rows(ws, header_row: int, name_col: int, net_col: int):
     """Yield (name, net, group) for each worker row; stop at the 'P/O' block.
 
-    `group` carries down from the last KNOWN_GROUPS label (junk labels are ignored).
+    A known KNOWN_GROUPS label sets the carried group; blank col A inherits it; a
+    non-empty junk label yields '' for that row only (no carry corruption).
     """
     current_group = ""
     for r in range(header_row + 1, ws.max_row + 1):
         a = ws.cell(row=r, column=1).value
+        row_group = current_group
         if isinstance(a, str):
             astr = a.strip()
             if astr.lower() == "p/o":
                 return
             if astr.lower() in KNOWN_GROUPS:
                 current_group = astr
+                row_group = astr
+            elif astr:
+                row_group = ""  # junk label -> blank role for this worker only
         name = ws.cell(row=r, column=name_col).value
         if not isinstance(name, str) or not name.strip():
             continue
         net = ws.cell(row=r, column=net_col).value
         net = float(net) if isinstance(net, (int, float)) else 0.0
-        yield name.strip(), net, current_group
+        yield name.strip(), net, row_group
 
 
 def _day_tabs(wb):

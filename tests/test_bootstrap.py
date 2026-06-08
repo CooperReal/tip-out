@@ -205,9 +205,10 @@ def test_extract_from_wvm_daily_collects_names_and_groups(tmp_path):
     assert "Ornella" in snap.employees
     assert "Dwayne Graham" in snap.employees
     assert "Cristian Cedeo" in snap.employees
+    assert "Heather" in snap.employees
     assert "Total CC Tips" not in snap.employees
-    # role taken from known groups; junk '10.19.2222025' must NOT become a role
+    # role taken from known groups; junk '10.19.2222025' must yield blank role
     assert snap.employees["Ornella"] == "WAIT AM"
-    assert snap.employees["Cristian Cedeo"] != "10.19.2222025"
+    assert snap.employees["Cristian Cedeo"] == ""
     # harvester seeds no aliases
     assert snap.aliases == {}
