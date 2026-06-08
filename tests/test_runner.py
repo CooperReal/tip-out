@@ -1,4 +1,5 @@
 from datetime import date
+from datetime import date as _date
 
 import pytest
 from click.testing import CliRunner
@@ -339,3 +340,22 @@ def test_cli_writes_unknown_hours_file_on_resolution_failure(tiny_runner_env, tm
     unknowns_path = env["config_path"].parent / "unknown_hours_names.txt"
     assert unknowns_path.exists()
     assert "Stranger Person" in unknowns_path.read_text(encoding="utf-8")
+
+
+def test_wvm_l56_mismatch_raises(tiny_wvm_runner_env):
+    """Verify L56Mismatch is raised when totals-row Net tip disagrees with worker row sum."""
+    from tipout.runner import run, L56Mismatch
+    from tipout.config import Config
+    from tipout.period import PayPeriod
+
+    env = tiny_wvm_runner_env
+    # Load the workbook and corrupt the totals-row Net tip (row 7, column 12)
+    wb = load_workbook(env["pos_path"])
+    wb["12.29.25"].cell(row=7, column=12, value=999.99)
+    wb.save(env["pos_path"])
+
+    cfg = Config.load(env["config_path"])
+    period = PayPeriod.from_dates(_date(2025, 12, 29), _date(2026, 1, 11))
+
+    with pytest.raises(L56Mismatch):
+        run(cfg, env["pos_path"], period, restaurant="wvm")
