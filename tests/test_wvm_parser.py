@@ -85,3 +85,24 @@ def test_same_person_two_groups_yields_two_rows(wvm_path):
     dwayne = [r for r in rows if r.raw_name == "Dwayne Graham" and r.date == date(2025, 12, 29)]
     assert len(dwayne) == 2
     assert sorted(r.net_tip for r in dwayne) == [50.0, 424.28]
+
+
+from openpyxl import Workbook
+
+from tipout.wvm_parser import WvmFormatError, read_day_net_totals
+
+
+def test_read_day_net_totals_returns_sheet_totals(wvm_path):
+    totals = read_day_net_totals(wvm_path)
+    # 12.29.25 totals-row Net tip = 162.28 + 424.28 + 0 + 50.0 = 636.56
+    assert round(totals[date(2025, 12, 29)], 2) == 636.56
+
+
+def test_parse_non_wvm_file_raises(tmp_path):
+    wb = Workbook()
+    wb.active.title = "NotADate"
+    wb.active["A1"] = "something else"
+    p = tmp_path / "notwvm.xlsx"
+    wb.save(p)
+    with pytest.raises(WvmFormatError):
+        parse_workbook(p)
