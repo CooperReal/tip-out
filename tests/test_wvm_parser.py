@@ -1,8 +1,10 @@
 from datetime import date
 
 import pytest
+from openpyxl import Workbook
 
 from tests.wvm_fixtures import build_wvm_workbook
+from tipout.wvm_parser import WvmFormatError, iter_daily_names, parse_workbook, read_day_net_totals
 
 
 @pytest.fixture
@@ -18,9 +20,6 @@ def test_fixture_builds_expected_sheets(wvm_path):
     assert "12.29.25" in names
     assert "Sheet1" in names
     assert "01.08.2026" in names
-
-
-from tipout.wvm_parser import parse_workbook
 
 
 def test_parse_reads_net_tip_and_date_from_happy_tab(wvm_path):
@@ -87,11 +86,6 @@ def test_same_person_two_groups_yields_two_rows(wvm_path):
     assert sorted(r.net_tip for r in dwayne) == [50.0, 424.28]
 
 
-from openpyxl import Workbook
-
-from tipout.wvm_parser import WvmFormatError, read_day_net_totals
-
-
 def test_read_day_net_totals_returns_sheet_totals(wvm_path):
     totals = read_day_net_totals(wvm_path)
     # 12.29.25 totals-row Net tip = 162.28 + 424.28 + 0 + 50.0 = 636.56
@@ -109,7 +103,6 @@ def test_parse_non_wvm_file_raises(tmp_path):
 
 
 def test_iter_daily_names_includes_zero_rows_and_groups(wvm_path):
-    from tipout.wvm_parser import iter_daily_names
     pairs = list(iter_daily_names(wvm_path))
     names = {n for n, _g in pairs}
     assert "Heather" in names          # zero-net row still yielded (unlike parse_workbook)

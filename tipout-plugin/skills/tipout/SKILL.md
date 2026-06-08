@@ -65,7 +65,7 @@ cd "$HOME/Documents/Tipout-WVM"
 
 This collects every distinct worker name and their role group. Important caveat: **do NOT merge same-first-name people who come from different role groups** — `Carlos` (WAIT AM) and `Carlos Legaspi` (To Go) are different people. Merging them corrupts both records. Use the role-group column as the disambiguator.
 
-Confirm it worked with `cd "$HOME/Documents/Tipout" && ./tipout.exe version`, then tell the user setup is complete.
+Confirm it worked with `./tipout.exe version` from the project folder you set up (Surfing Deer: `Documents/Tipout`; Watersound: `Documents/Tipout-WVM`), then tell the user setup is complete.
 
 ## Updating tipout ("update tipout")
 

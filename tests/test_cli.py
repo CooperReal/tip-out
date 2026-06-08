@@ -45,3 +45,21 @@ def test_cli_bootstrap_from_wvm_daily(tmp_path):
     roster = load_roster(out)
     assert "Ornella" in roster.employees
     assert "Cristian Cedeo" in roster.employees
+
+
+def test_cli_bootstrap_requires_a_source(tmp_path):
+    out = tmp_path / "roster.xlsx"
+    res = CliRunner().invoke(main, ["bootstrap-roster", "--out", str(out)])
+    assert res.exit_code != 0
+    assert "exactly one" in res.output.lower()
+
+
+def test_cli_bootstrap_rejects_both_sources(tmp_path):
+    f = tmp_path / "wvm.xlsx"
+    build_wvm_workbook(f)
+    out = tmp_path / "roster.xlsx"
+    res = CliRunner().invoke(main, [
+        "bootstrap-roster", "--from-summary", str(f), "--from-wvm-daily", str(f), "--out", str(out),
+    ])
+    assert res.exit_code != 0
+    assert "exactly one" in res.output.lower()
