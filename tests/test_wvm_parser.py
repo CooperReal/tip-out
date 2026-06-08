@@ -106,3 +106,14 @@ def test_parse_non_wvm_file_raises(tmp_path):
     wb.save(p)
     with pytest.raises(WvmFormatError):
         parse_workbook(p)
+
+
+def test_iter_daily_names_includes_zero_rows_and_groups(wvm_path):
+    from tipout.wvm_parser import iter_daily_names
+    pairs = list(iter_daily_names(wvm_path))
+    names = {n for n, _g in pairs}
+    assert "Heather" in names          # zero-net row still yielded (unlike parse_workbook)
+    assert "Cristian Cedeo" in names
+    # junk col-A label must never surface as a group
+    assert all(g != "10.19.2222025" for _n, g in pairs)
+    assert ("Ornella", "WAIT AM") in pairs
