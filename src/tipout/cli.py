@@ -8,7 +8,7 @@ from tipout import __version__
 
 @click.group()
 def main():
-    """Surfing Deer tip-out automation."""
+    """Tip-out automation (Surfing Deer + Watersound)."""
 
 
 @main.command()
@@ -45,18 +45,31 @@ def version():
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
     help="Path to Toast Time Clock CSV (optional). Populates per-employee Hours Worked + $/hr.",
 )
-def run(period_str, pos_path, config_path, hours_path):
+@click.option(
+    "--restaurant",
+    type=click.Choice(["sd", "wvm"]),
+    default="sd",
+    show_default=True,
+    help="Which restaurant's layout to parse. 'wvm' is summary-only (no --hours).",
+)
+def run(period_str, pos_path, config_path, hours_path, restaurant):
     """Append a pay-period tab to the 2-week summary workbook."""
     from tipout.config import Config
     from tipout.period import PayPeriod
-    from tipout.runner import run as _run, UnresolvedNames, UnresolvedHoursNames
+    from tipout.runner import (
+        run as _run, UnresolvedNames, UnresolvedHoursNames, DanglingAlias, L56Mismatch,
+    )
+    from tipout.wvm_parser import WvmFormatError
+
+    if restaurant == "wvm" and hours_path is not None:
+        raise click.UsageError("--hours is not supported with --restaurant wvm (summary only).")
 
     start_str, end_str = period_str.split(":", 1)
     period = PayPeriod.from_dates(date.fromisoformat(start_str), date.fromisoformat(end_str))
     cfg = Config.load(config_path)
 
     try:
-        _run(cfg, pos_path, period, hours_path=hours_path)
+        _run(cfg, pos_path, period, hours_path=hours_path, restaurant=restaurant)
     except UnresolvedNames as exc:
         unknowns_path = config_path.parent / "unknown_names.txt"
         unknowns_path.write_text("\n".join(exc.names) + "\n", encoding="utf-8")
@@ -86,6 +99,24 @@ def run(period_str, pos_path, config_path, hours_path):
             "(pointing at an existing canonical). Then re-run.",
             err=True,
         )
+        raise SystemExit(1)
+    except DanglingAlias as exc:
+        click.echo(
+            f"Roster has alias(es) pointing at a name not in Employees: {exc.names}. "
+            "Fix roster.xlsx (run 'check-roster') and re-run.",
+            err=True,
+        )
+        raise SystemExit(1)
+    except L56Mismatch as exc:
+        click.echo(str(exc), err=True)
+        click.echo(
+            "The summary's daily total does not match the WVM sheet's own total — "
+            "the file may be malformed for that day. No output written.",
+            err=True,
+        )
+        raise SystemExit(1)
+    except WvmFormatError as exc:
+        click.echo(str(exc), err=True)
         raise SystemExit(1)
 
     click.echo(f"Done. Pay period {period.start} to {period.end}. Wrote {cfg.summary_path}.")
