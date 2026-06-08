@@ -37,5 +37,8 @@ Thumbs.db
 # Superpowers planning docs (local only — not for GitHub)
 docs/superpowers/
 
+# Parent-facing install/update email draft (local only — not for GitHub)
+docs/parent-install-email.md
+
 # uv — not used by this project
 uv.lock
