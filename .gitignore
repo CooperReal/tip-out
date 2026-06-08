@@ -34,8 +34,9 @@ Thumbs.db
 .idea/
 *.swp
 
-# Claude Code local state
-.claude/
+# Claude Code: ignore local state, but share the project hooks/settings
+.claude/*
+!.claude/settings.json
 
 # Superpowers planning docs (local only — not for GitHub)
 docs/superpowers/
