@@ -34,5 +34,8 @@ Thumbs.db
 # Claude Code local state
 .claude/
 
+# Superpowers planning docs (local only — not for GitHub)
+docs/superpowers/
+
 # uv — not used by this project
 uv.lock
