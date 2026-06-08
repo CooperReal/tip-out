@@ -47,6 +47,22 @@ def extract_roster_from_summary(summary_path: Path) -> RosterSnapshot:
     return RosterSnapshot(employees=employees, aliases=aliases)
 
 
+def extract_roster_from_wvm_daily(wvm_path: Path) -> RosterSnapshot:
+    """Seed a roster from the WVM daily worksheet: distinct worker names, role taken
+    from the (known) role-group label. No aliases are inferred — the operator dedupes
+    genuine misspellings by hand, and must NOT merge same-name people from different
+    groups (e.g. 'Carlos' vs 'Carlos Legaspi').
+    """
+    from tipout.wvm_parser import iter_daily_names
+
+    employees: dict[str, str] = {}
+    for name, group in iter_daily_names(wvm_path):
+        # First sighting wins; only fill role if we don't already have one.
+        if name not in employees or not employees[name]:
+            employees[name] = group  # group is '' for junk/blank labels
+    return RosterSnapshot(employees=employees, aliases={})
+
+
 def write_roster(snapshot: RosterSnapshot, out_path: Path) -> None:
     wb = Workbook()
     emp = wb.active

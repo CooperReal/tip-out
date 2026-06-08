@@ -3,6 +3,9 @@ from pathlib import Path
 from click.testing import CliRunner
 from openpyxl import Workbook, load_workbook
 
+from tests.wvm_fixtures import build_wvm_workbook
+from tipout.bootstrap import extract_roster_from_summary, extract_roster_from_wvm_daily
+
 
 def _build_summary(path: Path, tabs: list[tuple[str, list[tuple]]]) -> None:
     """Build a minimal 2-week summary workbook.
@@ -27,8 +30,6 @@ def _build_summary(path: Path, tabs: list[tuple[str, list[tuple]]]) -> None:
 
 
 def test_extract_roster_from_minimal_summary(tmp_path):
-    from tipout.bootstrap import extract_roster_from_summary
-
     path = tmp_path / "summary.xlsx"
     _build_summary(
         path,
@@ -78,8 +79,6 @@ def test_extract_roster_from_minimal_summary(tmp_path):
 
 
 def test_extract_roster_skips_blank_canonical(tmp_path):
-    from tipout.bootstrap import extract_roster_from_summary
-
     path = tmp_path / "summary.xlsx"
     _build_summary(
         path,
@@ -196,3 +195,19 @@ def test_bootstrap_roster_refuses_overwrite_without_force(tmp_path):
     assert result2.exit_code == 0, result2.output
     wb = load_workbook(out_path)
     assert "Employees" in wb.sheetnames
+
+
+def test_extract_from_wvm_daily_collects_names_and_groups(tmp_path):
+    p = tmp_path / "wvm.xlsx"
+    build_wvm_workbook(p)
+    snap = extract_roster_from_wvm_daily(p)
+    # distinct names harvested (incl. zero-net "Heather"; excl. P/O strings)
+    assert "Ornella" in snap.employees
+    assert "Dwayne Graham" in snap.employees
+    assert "Cristian Cedeo" in snap.employees
+    assert "Total CC Tips" not in snap.employees
+    # role taken from known groups; junk '10.19.2222025' must NOT become a role
+    assert snap.employees["Ornella"] == "WAIT AM"
+    assert snap.employees["Cristian Cedeo"] != "10.19.2222025"
+    # harvester seeds no aliases
+    assert snap.aliases == {}
