@@ -276,6 +276,42 @@ def test_wvm_run_rejects_hours(tiny_wvm_runner_env):
         run(cfg, env["pos_path"], period, hours_path=env["pos_path"], restaurant="wvm")
 
 
+def test_wvm_l56_check_passes_on_clean_env(tiny_wvm_runner_env):
+    from tipout.runner import run, DanglingAlias, L56Mismatch
+    from tipout.config import Config
+    from tipout.period import PayPeriod
+    from tipout.roster import load_roster
+
+    env = tiny_wvm_runner_env
+    cfg = Config.load(env["config_path"])
+    period = PayPeriod.from_dates(date(2025, 12, 29), date(2026, 1, 11))
+    run(cfg, env["pos_path"], period, restaurant="wvm")  # no raise
+    wb = load_workbook(env["summary_path"])
+    ws = wb["12.29 to 01.11.2026"]
+    # Daily total for 12.29 (col B = day 1) must equal the tab's 586.56 figure.
+    # totals row is the last row; find "Daily Total" label in col A.
+    label_rows = [c.row for c in ws["A"] if c.value == "Daily Total"]
+    tr = label_rows[0]
+    assert round(ws.cell(row=tr, column=2).value, 2) == 586.56  # 162.28 + 424.28
+
+
+def test_wvm_dangling_alias_raises(tiny_wvm_runner_env):
+    from tipout.runner import run, DanglingAlias
+    from tipout.config import Config
+    from tipout.period import PayPeriod
+
+    env = tiny_wvm_runner_env
+    # Point an alias at a canonical absent from Employees -> dangling.
+    from openpyxl import load_workbook as _lw
+    rwb = _lw(env["roster_path"])
+    rwb["Name Aliases"].append(["Ornella", "Ghost Person"])  # overrides Ornella mapping
+    rwb.save(env["roster_path"])
+    cfg = Config.load(env["config_path"])
+    period = PayPeriod.from_dates(date(2025, 12, 29), date(2026, 1, 11))
+    with pytest.raises(DanglingAlias):
+        run(cfg, env["pos_path"], period, restaurant="wvm")
+
+
 def test_cli_writes_unknown_hours_file_on_resolution_failure(tiny_runner_env, tmp_path):
     from tipout.cli import main
 
