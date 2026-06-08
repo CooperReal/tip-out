@@ -183,9 +183,16 @@ def init(project_dir, summary_path, anchor, force):
 @click.option(
     "--from-summary",
     "summary_path",
-    required=True,
+    default=None,
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="Path to an existing 2-week summary workbook to harvest names from.",
+    help="Seed the roster from an existing 2-week summary workbook.",
+)
+@click.option(
+    "--from-wvm-daily",
+    "wvm_path",
+    default=None,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help="Seed the roster from a WVM daily worksheet (distinct names + role groups).",
 )
 @click.option(
     "--out",
@@ -195,13 +202,21 @@ def init(project_dir, summary_path, anchor, force):
     help="Where to write the new roster.xlsx.",
 )
 @click.option("--force", is_flag=True, default=False, help="Overwrite --out if it exists.")
-def bootstrap_roster_cmd(summary_path, out_path, force):
-    """Seed a roster.xlsx from an existing 2-week summary workbook."""
-    from tipout.bootstrap import extract_roster_from_summary, write_roster
+def bootstrap_roster_cmd(summary_path, wvm_path, out_path, force):
+    """Seed a roster.xlsx from an existing summary OR a WVM daily worksheet."""
+    from tipout.bootstrap import (
+        extract_roster_from_summary, extract_roster_from_wvm_daily, write_roster,
+    )
 
+    if bool(summary_path) == bool(wvm_path):
+        raise click.UsageError("Pass exactly one of --from-summary or --from-wvm-daily.")
     if out_path.exists() and not force:
         raise click.ClickException(f"{out_path} already exists. Pass --force to overwrite.")
-    snapshot = extract_roster_from_summary(summary_path)
+
+    if summary_path:
+        snapshot = extract_roster_from_summary(summary_path)
+    else:
+        snapshot = extract_roster_from_wvm_daily(wvm_path)
     write_roster(snapshot, out_path)
     click.echo(
         f"Extracted {len(snapshot.employees)} employees, "

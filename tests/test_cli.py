@@ -3,7 +3,9 @@ from datetime import date as _date
 from click.testing import CliRunner
 from openpyxl import load_workbook
 
+from tests.wvm_fixtures import build_wvm_workbook
 from tipout.cli import main
+from tipout.roster import load_roster
 
 
 def test_cli_run_wvm_writes_summary(tiny_wvm_runner_env):
@@ -30,3 +32,16 @@ def test_cli_run_wvm_with_hours_errors(tiny_wvm_runner_env):
     ])
     assert res.exit_code != 0
     assert "hours" in res.output.lower()
+
+
+def test_cli_bootstrap_from_wvm_daily(tmp_path):
+    wvm = tmp_path / "wvm.xlsx"
+    build_wvm_workbook(wvm)
+    out = tmp_path / "roster.xlsx"
+    res = CliRunner().invoke(main, [
+        "bootstrap-roster", "--from-wvm-daily", str(wvm), "--out", str(out),
+    ])
+    assert res.exit_code == 0, res.output
+    roster = load_roster(out)
+    assert "Ornella" in roster.employees
+    assert "Cristian Cedeo" in roster.employees
