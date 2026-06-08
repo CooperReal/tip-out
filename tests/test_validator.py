@@ -125,6 +125,25 @@ def test_cli_check_roster_clean(tmp_path):
     assert "OK" in result.output
 
 
+def test_validator_flags_dangling_alias(tmp_path):
+    from openpyxl import Workbook
+
+    from tipout.validator import validate_roster
+
+    wb = Workbook()
+    emp = wb.active
+    emp.title = "Employees"
+    emp.append(["Canonical Name", "Role", "Active From", "Active To", "Notes"])
+    emp.append(["Real Person", "server", None, None, ""])
+    al = wb.create_sheet("Name Aliases")
+    al.append(["Raw Name", "Canonical Name"])
+    al.append(["Ghosty", "Ghost Person"])  # target not in Employees
+    p = tmp_path / "roster.xlsx"
+    wb.save(p)
+    issues = validate_roster(p)
+    assert any(i.severity == "error" and "not in Employees" in i.message for i in issues)
+
+
 def test_cli_check_roster_reports_errors_and_exits_nonzero(tmp_path):
     from tipout.cli import main
 
