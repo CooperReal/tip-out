@@ -1,6 +1,6 @@
-# tipout — Surfing Deer tip-out automation
+# tipout — tip-out automation (Surfing Deer + Watersound)
 
-A small Python CLI that reads a pay period's POS daily workbook and appends a new tab to the 2-week tip summary workbook used for payroll reconciliation.
+A small Python CLI that reads a pay period's POS daily workbook and appends a new tab to the 2-week tip summary workbook used for payroll reconciliation. Supports both Surfing Deer (SD) and Watersound Village Market (WVM).
 
 ## Quick start (for the operator)
 
@@ -9,11 +9,17 @@ You run this once per pay period, after the POS export is saved to disk.
 1. Export the POS daily workbook as usual (e.g. `2026 SD Daily Tipout Worksheet.xlsx`). Save it somewhere you can find it.
 2. Open a terminal in this folder (`tip-out`) and run:
 
+   **Surfing Deer:**
    ```
    .venv/Scripts/tipout run --period 2026-01-12:2026-01-25 --pos "2026 SD Daily Tipout Worksheet.xlsx"
    ```
 
-   Replace the two dates with the start and end of the pay period (14 days, inclusive). Replace the POS path with the file you just exported.
+   **Watersound (WVM) — summary only, no `--hours`:**
+   ```
+   .venv/Scripts/tipout run --restaurant wvm --period 2026-01-12:2026-01-25 --pos "2026 WVM Daily Tip out Worksheet.xlsx"
+   ```
+
+   Replace the two dates with the start and end of the pay period (14 days, inclusive). Replace the POS path with the file you just exported. `--restaurant` defaults to `sd`.
 
 3. If the tool prints `Found N unknown name(s) in the POS file for this period.`, follow the steps under **Handling unknown names** below, then re-run the same command. Repeat until the command finishes with `Done.`
 4. Open `output/summary.xlsx`. The new pay-period tab is appended. Send the workbook to payroll.
@@ -69,7 +75,15 @@ If you don't yet have a `roster.xlsx` but do have a prior, hand-maintained 2-wee
 .venv/Scripts/tipout bootstrap-roster --from-summary "2026 SD 2 WK Tip Summary By employee.xlsx" --out roster.xlsx
 ```
 
-Pass `--force` to overwrite an existing `roster.xlsx`. This reads canonical names and aliases that are already embedded in the hand-done summary and writes them into the new roster format.
+For **WVM**, there is no prior hand-done summary to bootstrap from. Seed the roster directly from the WVM daily worksheet:
+
+```
+.venv/Scripts/tipout bootstrap-roster --from-wvm-daily "2026 WVM Daily Tip out Worksheet.xlsx" --out roster.xlsx
+```
+
+This collects every distinct worker name and their role group. **Do not merge same-first-name people from different role groups** — `Carlos` (WAIT AM) and `Carlos Legaspi` (To Go) are different people.
+
+Pass `--force` to overwrite an existing `roster.xlsx`.
 
 ## For developers
 

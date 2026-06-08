@@ -48,6 +48,8 @@ A per-employee, per-pay-period statement. `Yvonne.xlsx` is one example; the same
 
 Same idea as File 1, but Watersound runs AM and PM service, so the layout had to change.
 
+The WVM 2-week summary is now produced by the tool via `tipout run --restaurant wvm` (summary only — no per-employee files).
+
 - One **tab per day** (not per week) — 113 daily tabs covering 12.29.25 through 04.19.26.
 - Each day's tab groups workers by **role**: `WAIT AM`, `BARTNDR`, `HOST`, `SA`, `F Runner`, `To Go`.
 - Tip columns are split into AM and PM:

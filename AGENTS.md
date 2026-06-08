@@ -114,7 +114,12 @@ Background reading if you're editing the skill or packaging it as a Cowork plugi
 
 - **New column in the POS?** Add alias to `_HEADER_ALIASES` in `pos_parser.py`; add field to `ShiftRow`; thread through `build_grid`. Grep `ShiftRow` to find all sites.
 - **New CLI command?** Add an `@main.command` in `cli.py` that delegates to a new module. Mirror the pattern of `check-roster`: CLI parses args, module does the work, CLI formats output.
-- **New restaurant (WVM)?** WVM has AM/PM shifts and one-tab-per-day. The parser's day-block detection does not survive the layout change — it needs a separate parser module. `runner` / `summary` / `roster` can likely stay.
+- **WVM / Watersound (implemented, summary-only).** `wvm_parser.py` parses the
+  day-per-tab WVM worksheet into the same `ShiftRow` list; selected via
+  `run --restaurant wvm`. Date comes from the tab name (B3 is a cross-check), only
+  combined `net_tip` is read, and a per-day `L56` total cross-check guards integrity.
+  `summary`/`roster`/`period` are reused; per-employee + hours are out of scope.
+  See `docs/superpowers/specs/2026-06-07-wvm-tipout-summary-design.md`.
 - **Roster schema change?** Update both `roster.py` (reader), `validator.py` (checker), and `bootstrap.py` (writer) together. Tests in `test_roster.py` + `test_validator.py` + `test_bootstrap.py` will catch drift.
 
 ## Operating constraints worth remembering

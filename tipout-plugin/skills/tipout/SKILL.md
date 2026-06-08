@@ -1,12 +1,21 @@
 ---
 name: tipout
-description: Generate the 2-week tip-out summary for Surfing Deer by running the `tipout` engine. Use this skill any time the user wants to run a pay-period tip-out, produce or update the 2-week summary workbook from a POS daily export, reconcile tips payable, add/edit employees in the tip-out roster, or update the tipout tool to the latest version. Trigger when the user mentions a POS file, pay period, tip summary, Surfing Deer payroll, an unknown-name / alias situation, or says "update tipout". Do NOT trigger for general-purpose spreadsheet editing, payroll math unrelated to tip distribution, or Watersound/WVM (different tool).
+description: Generate the 2-week tip-out summary for Surfing Deer or Watersound (WVM) by running the `tipout` engine. Use this skill any time the user wants to run a pay-period tip-out, produce or update the 2-week summary workbook from a POS daily export, reconcile tips payable, add/edit employees in the tip-out roster, or update the tipout tool to the latest version. Trigger when the user mentions a POS file, pay period, tip summary, Surfing Deer payroll, Watersound, WVM, run the Watersound tip-out, an unknown-name / alias situation, or says "update tipout". Do NOT trigger for general-purpose spreadsheet editing or payroll math unrelated to tip distribution.
 allowed-tools: Bash(cd *) Bash(ls *) Bash(cat *) Bash(mkdir *) Bash(curl *) Bash(powershell *) Bash(./tipout.exe *) Read Edit
 ---
 
-# Tipout — Surfing Deer pay-period summary runner
+# Tipout — pay-period summary runner (Surfing Deer + Watersound)
 
-Use this skill to produce a new pay-period tab in the Surfing Deer 2-week summary workbook from a POS daily export.
+Use this skill to produce a new pay-period tab in the 2-week summary workbook from a POS daily export — for either Surfing Deer (SD) or Watersound Village Market (WVM).
+
+## Choosing the restaurant
+
+The operator tells you which restaurant they're running. Each restaurant has its own project folder so rosters, configs, and output never collide:
+
+- **Surfing Deer (SD):** `%USERPROFILE%\Documents\Tipout` (i.e. `"$HOME/Documents/Tipout"`)
+- **Watersound (WVM):** `%USERPROFILE%\Documents\Tipout-WVM` (i.e. `"$HOME/Documents/Tipout-WVM"`)
+
+Pass `--restaurant sd` (the default) or `--restaurant wvm` to the `run` command. Keep one skill and one engine binary — SD and WVM share the same `tipout.exe`.
 
 The tool has two parts, and you (the agent) manage both so the user never has to:
 
@@ -46,6 +55,15 @@ If the user has an existing hand-done 2-week summary workbook, seed the roster f
 cd "$HOME/Documents/Tipout"
 ./tipout.exe init --from-summary "<path-to-their-existing-summary.xlsx>" --force
 ```
+
+**WVM first-time roster seeding:** there is no prior hand-done WVM summary, so seed from the WVM daily worksheet directly:
+
+```bash
+cd "$HOME/Documents/Tipout-WVM"
+./tipout.exe bootstrap-roster --from-wvm-daily "<WVM daily.xlsx>" --out roster.xlsx --force
+```
+
+This collects every distinct worker name and their role group. Important caveat: **do NOT merge same-first-name people who come from different role groups** — `Carlos` (WAIT AM) and `Carlos Legaspi` (To Go) are different people. Merging them corrupts both records. Use the role-group column as the disambiguator.
 
 Confirm it worked with `cd "$HOME/Documents/Tipout" && ./tipout.exe version`, then tell the user setup is complete.
 
@@ -135,16 +153,28 @@ Inside `Documents\Tipout`:
 
 ## Running a pay period
 
-Always `cd` into the project directory first so relative paths in `config.yaml` resolve:
+Always `cd` into the project directory first so relative paths in `config.yaml` resolve.
+
+**Surfing Deer (SD):**
 
 ```bash
 cd "$HOME/Documents/Tipout"
 ./tipout.exe run --period 2026-01-12:2026-01-25 --pos "<POS-file.xlsx>" --hours "<TimeClock.csv>"
 ```
 
+**Watersound (WVM):**
+
+```bash
+cd "$HOME/Documents/Tipout-WVM"
+./tipout.exe run --restaurant wvm --period 2026-01-12:2026-01-25 --pos "<WVM daily.xlsx>"
+```
+
+WVM is **summary only**: it produces `output/summary.xlsx` and does **not** produce per-employee files. `--hours` is **not accepted** with `--restaurant wvm` — passing it is an error.
+
+- `--restaurant` is `sd` (default) or `wvm`.
 - `--period` is `YYYY-MM-DD:YYYY-MM-DD`, inclusive, must be exactly 14 days apart.
 - `--pos` is the POS daily workbook path (quote it if the name has spaces).
-- `--hours` is optional — when supplied, the Toast Time Clock CSV populates the `Hours Worked` column and `$/hr` cell on each per-employee period tab. Omit it and those cells stay blank.
+- `--hours` is optional (SD only) — when supplied, the Toast Time Clock CSV populates the `Hours Worked` column and `$/hr` cell on each per-employee period tab. Omit it and those cells stay blank.
 - `--config` defaults to `./config.yaml`.
 
 On success the tool prints `Done.` and writes/updates `output/summary.xlsx`.
@@ -177,8 +207,9 @@ The summary workbook is append-only and will reject a duplicate tab with `Tab '.
 Run all of these from inside `Documents\Tipout` (`cd "$HOME/Documents/Tipout"` first):
 
 - `./tipout.exe init [--dir <path>] [--from-summary <file>] [--anchor YYYY-MM-DD] [--force]` — scaffold a fresh project (`config.yaml`, `roster.xlsx`, `output/`). `--from-summary` seeds the roster from an existing hand-done summary.
-- `./tipout.exe run --period <start>:<end> --pos <file> [--hours <csv>] [--config <path>]` — primary command.
-- `./tipout.exe bootstrap-roster --from-summary <file> --out <file> [--force]` — seed only the roster from an existing summary.
+- `./tipout.exe run --period <start>:<end> --pos <file> [--restaurant sd|wvm] [--hours <csv>] [--config <path>]` — primary command. `--restaurant` defaults to `sd`. `--hours` is SD-only.
+- `./tipout.exe bootstrap-roster --from-summary <file> --out <file> [--force]` — seed only the roster from an existing SD summary.
+- `./tipout.exe bootstrap-roster --from-wvm-daily <file> --out <file> [--force]` — seed a WVM roster from the WVM daily worksheet (distinct names + role groups; no aliases seeded).
 - `./tipout.exe check-roster <file>` — validate a roster workbook for structural and semantic issues (orphan aliases, duplicates, first-name collisions). Run this after any manual roster edit or when the user "uploads a new roster."
 - `./tipout.exe version` — print tool version.
 
@@ -189,7 +220,9 @@ All options are discoverable via `./tipout.exe <cmd> --help`.
 - `output/summary.xlsx` — the 2-week summary workbook. One tab per pay period. Col A = canonical name, col B = most-recent raw spelling seen that period, cols C..AC = daily Net Tip per day (14 days), col AE = period total.
 - `unknown_names.txt` — only present when a run hit unresolved names. Safe to delete after resolving.
 - `unknown_hours_names.txt` — only present when a run hit unresolved names from the time-clock CSV. Safe to delete after resolving.
-- `output/per-employee/<Name>.xlsx` — one workbook per canonical employee; layout matches the hand-done `Yvonne.xlsx` reference (`Hours Worked` at col B, `$/hr` on totals row col J).
+- `output/per-employee/<Name>.xlsx` — one workbook per canonical employee (SD only); layout matches the hand-done `Yvonne.xlsx` reference (`Hours Worked` at col B, `$/hr` on totals row col J).
+
+**For WVM (`--restaurant wvm`), only `output/summary.xlsx` is produced.** No per-employee files are written and `--hours` is rejected.
 
 ## Troubleshooting
 
@@ -198,3 +231,5 @@ All options are discoverable via `./tipout.exe <cmd> --help`.
 - `ValueError: Tab '...' already exists` → the period already has a tab. Delete it in Excel or delete the whole `summary.xlsx` to re-run.
 - `TypeError: anchor_date must be a YYYY-MM-DD date` → the config YAML has `anchor_date` wrapped in quotes. Remove the quotes so YAML parses it as a date.
 - Any `SchemaError` from the parser → the POS file's layout changed. Do not try to patch around it; ask the user to verify the POS export is the expected weekly-tabs workbook.
+- `no WVM day-tabs found` → you ran `--restaurant wvm` against a non-WVM file (or forgot `--restaurant wvm` and pointed at the WVM file). Re-check the `--restaurant` flag and confirm `--pos` points at the correct file.
+- `WVM integrity check failed` → a day's summary total does not match the WVM sheet's own total for that day. The file may be malformed for that day. No output is written. Tell the operator and ask them to inspect the flagged date's tab.
