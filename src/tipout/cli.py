@@ -91,6 +91,63 @@ def run(period_str, pos_path, config_path, hours_path):
     click.echo(f"Done. Pay period {period.start} to {period.end}. Wrote {cfg.summary_path}.")
 
 
+@main.command()
+@click.option(
+    "--dir",
+    "project_dir",
+    default=".",
+    type=click.Path(file_okay=False, path_type=Path),
+    help="Project directory to scaffold (default: current directory).",
+)
+@click.option(
+    "--from-summary",
+    "summary_path",
+    default=None,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help="Existing 2-week summary workbook to seed the roster from (optional).",
+)
+@click.option(
+    "--anchor",
+    "anchor",
+    default="2025-12-29",
+    help="Pay-period anchor date (a Monday that starts a known period). Default: 2025-12-29.",
+)
+@click.option("--force", is_flag=True, default=False, help="Overwrite existing config.yaml / roster.xlsx.")
+def init(project_dir, summary_path, anchor, force):
+    """Scaffold a fresh tipout project (config.yaml, roster.xlsx, output/)."""
+    from tipout.bootstrap import RosterSnapshot, extract_roster_from_summary, write_roster
+
+    project_dir.mkdir(parents=True, exist_ok=True)
+    (project_dir / "output").mkdir(exist_ok=True)
+
+    config_path = project_dir / "config.yaml"
+    roster_path = project_dir / "roster.xlsx"
+
+    existing = [p for p in (config_path, roster_path) if p.exists()]
+    if existing and not force:
+        names = ", ".join(p.name for p in existing)
+        raise click.ClickException(f"{names} already exists in {project_dir}. Pass --force to overwrite.")
+
+    config_path.write_text(
+        f"# Tipout configuration. anchor_date must be a Monday that starts a known pay period.\n"
+        f"anchor_date: {anchor}\n"
+        f"roster_path: roster.xlsx\n"
+        f"summary_path: output/summary.xlsx\n",
+        encoding="utf-8",
+    )
+
+    if summary_path is not None:
+        snapshot = extract_roster_from_summary(summary_path)
+    else:
+        snapshot = RosterSnapshot(employees={}, aliases={})
+    write_roster(snapshot, roster_path)
+
+    click.echo(
+        f"Initialized tipout project in {project_dir} "
+        f"({len(snapshot.employees)} employees, {len(snapshot.aliases)} aliases)."
+    )
+
+
 @main.command("bootstrap-roster")
 @click.option(
     "--from-summary",
