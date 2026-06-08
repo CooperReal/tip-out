@@ -1,11 +1,11 @@
-from datetime import date
+from datetime import date, date as _date
 
 import pytest
 from openpyxl import Workbook, load_workbook
 
 from tipout.period import PayPeriod
 from tipout.pos_parser import ShiftRow
-from tipout.roster import load_roster
+from tipout.roster import Employee, load_roster, Roster
 from tipout.summary import (
     DATE_FORMAT,
     TIP_FORMAT,
@@ -269,3 +269,30 @@ def test_tab_name_formatting():
 
     p2 = PayPeriod.from_dates(date(2025, 9, 29), date(2025, 10, 12))
     assert _tab_name(p2) == "09.29 to 10.12.2025"
+
+
+def _one_roster():
+    return Roster(employees={"Jane Smith": Employee("Jane Smith", "server")}, aliases={})
+
+
+def _one_row():
+    r = ShiftRow(
+        date=_date(2025, 12, 29), raw_name="Jane",
+        cc_tips=0.0, party=0.0, sa_tip_out=0.0, bar_tipout=0.0,
+        total_tip_out=0.0, barback=0.0, bartender=0.0, net_tip=100.0, is_party=False,
+    )
+    r.canonical_name = "Jane Smith"
+    return r
+
+
+def test_build_grid_title_uses_restaurant_name():
+    period = PayPeriod.from_dates(_date(2025, 12, 29), _date(2026, 1, 11))
+    grid = build_grid(period, [_one_row()], _one_roster(),
+                      restaurant_name="Watersound Village Market")
+    assert grid[0][0].startswith("Watersound Village Market Tip outs")
+
+
+def test_build_grid_title_defaults_to_surfing_deer():
+    period = PayPeriod.from_dates(_date(2025, 12, 29), _date(2026, 1, 11))
+    grid = build_grid(period, [_one_row()], _one_roster())
+    assert grid[0][0].startswith("Surfing Deer Tip outs")

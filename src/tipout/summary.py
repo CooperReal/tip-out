@@ -40,7 +40,10 @@ def _round2(x: float) -> float:
 
 
 def build_grid(
-    period: PayPeriod, shift_rows: list[ShiftRow], roster: Roster
+    period: PayPeriod,
+    shift_rows: list[ShiftRow],
+    roster: Roster,
+    restaurant_name: str = "Surfing Deer",
 ) -> list[list[Any]]:
     """Return a 2D grid of cell values for the 2-week summary tab.
 
@@ -62,7 +65,7 @@ def build_grid(
 
     dates_in_period = [period.start + timedelta(days=i) for i in range(14)]
     title = (
-        f"Surfing Deer Tip outs "
+        f"{restaurant_name} Tip outs "
         f"{period.start.month:02d}.{period.start.day:02d} to "
         f"{period.end.month:02d}.{period.end.day:02d}.{period.end.year}"
     )
@@ -195,6 +198,7 @@ def append_period_tab(
     period: PayPeriod,
     shift_rows: list[ShiftRow],
     roster: Roster,
+    restaurant_name: str = "Surfing Deer",
 ) -> None:
     """Append a new period tab to the 2-week summary workbook, creating it if absent.
 
@@ -213,7 +217,7 @@ def append_period_tab(
         raise ValueError(f"Tab {tab_name!r} already exists — delete to re-run")
 
     ws = wb.create_sheet(tab_name)
-    grid = build_grid(period, shift_rows, roster)
+    grid = build_grid(period, shift_rows, roster, restaurant_name=restaurant_name)
     for r, row_values in enumerate(grid, start=1):
         for c, val in enumerate(row_values, start=1):
             if val is not None:
