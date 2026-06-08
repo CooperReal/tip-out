@@ -111,3 +111,78 @@ def tiny_runner_env(tmp_path):
         "summary_path": summary_path,
         "hours_path": hours_csv,
     }
+
+
+@pytest.fixture
+def tiny_wvm_runner_env(tmp_path):
+    """Clean WVM workbook + roster + config under tmp_path.
+
+    Two day-tabs in the first pay period (anchor 2025-12-29). All names resolve via
+    the roster; each tab's totals-row Net tip equals the sum of its worker rows.
+    """
+    from openpyxl import Workbook
+
+    def _day(wb, tab, d, rows):
+        ws = wb.create_sheet(tab)
+        ws["A1"] = "WATERSOUND VILLAGE MARKET"
+        ws["A3"] = "Date"
+        ws["B3"] = d
+        labels = ["AM CC Tips", "PM CC TIPS", "AM STAFF TIP OUT", "PM STAFF TIP OUT",
+                  "AM Bar Tipout", "PM BAR TIPOUT", "TotalTip Out", "Serv As",
+                  "Bartender", "Net tip"]
+        for i, label in enumerate(labels, start=3):
+            ws.cell(row=4, column=i, value=label)
+        r = 5
+        total = 0.0
+        for group, name, net in rows:
+            if group:
+                ws.cell(row=r, column=1, value=group)
+            ws.cell(row=r, column=2, value=name)
+            ws.cell(row=r, column=12, value=net)
+            total += net
+            r += 1
+        ws.cell(row=r, column=12, value=round(total, 2))
+        ws.cell(row=r + 1, column=1, value="P/O")
+        ws.cell(row=r + 1, column=2, value="Total CC Tips")
+
+    wb = Workbook()
+    del wb["Sheet"]
+    _day(wb, "12.29.25", _date(2025, 12, 29), [
+        ("WAIT AM", "Ornella", 162.28),
+        ("WAIT AM", "Dwayne", 424.28),
+    ])
+    _day(wb, "12.30.25", _date(2025, 12, 30), [
+        ("WAIT AM", "Ornella", 100.00),
+    ])
+    pos_path = tmp_path / "wvm.xlsx"
+    wb.save(pos_path)
+
+    rwb = Workbook()
+    emp = rwb.active
+    emp.title = "Employees"
+    emp.append(["Canonical Name", "Role", "Active From", "Active To", "Notes"])
+    emp.append(["Ornella Diaz", "server", _date(2025, 1, 1), None, ""])
+    emp.append(["Dwayne Graham", "server", _date(2025, 1, 1), None, ""])
+    aliases = rwb.create_sheet("Name Aliases")
+    aliases.append(["Raw Name", "Canonical Name"])
+    aliases.append(["Ornella", "Ornella Diaz"])
+    aliases.append(["Dwayne", "Dwayne Graham"])
+    roster_path = tmp_path / "roster.xlsx"
+    rwb.save(roster_path)
+
+    summary_path = tmp_path / "summary.xlsx"
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        yaml.safe_dump({
+            "anchor_date": _date(2025, 12, 29),
+            "roster_path": str(roster_path),
+            "summary_path": str(summary_path),
+        }),
+        encoding="utf-8",
+    )
+    return {
+        "config_path": config_path,
+        "pos_path": pos_path,
+        "roster_path": roster_path,
+        "summary_path": summary_path,
+    }
